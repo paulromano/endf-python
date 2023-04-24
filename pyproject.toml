@@ -1,0 +1,47 @@
+[build-system]
+requires = ["flit_core >=3.2,<4"]
+build-backend = "flit_core.buildapi"
+
+[project]
+name = "endfpy"
+version = "0.1.0"
+authors = [
+    { name = "Paul Romano", email = "paul.k.romano@gmail.com" },
+]
+license = { file = "LICENSE" }
+description = "Python interface to ENDF-6 files"
+readme = "README.md"
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "Intended Audience :: End Users/Desktop",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Natural Language :: English",
+    "Operating System :: OS Independent",
+    "Topic :: Scientific/Engineering",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.7",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+]
+requires-python = ">=3.7"
+dependencies = [
+    "numpy",
+    "uncertainties",
+]
+
+[project.optional-dependencies]
+test = ["pytest"]
+docs = [
+    "sphinx",
+    "pydata_sphinx_theme",
+    "sphinx_design",
+    "sphinx-autodoc-typehints",
+]
+
+[project.urls]
+"Bug Tracker" = "https://github.com/paulromano/endfpy/issues"
+"Source Code" = "https://github.com/paulromano/endfpy"
