@@ -62,6 +62,9 @@ class Tabulated1D:
         self.x = np.asarray(x)
         self.y = np.asarray(y)
 
+    def __repr__(self):
+        return f"<Tabulated1D: {self.x.size} points, {self.breakpoints.size} regions>"
+
     def __call__(self, x):
         # Check if input is scalar
         if not isinstance(x, Iterable):
