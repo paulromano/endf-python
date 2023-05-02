@@ -107,6 +107,62 @@ def get_evaluations(filename):
     return evaluations
 
 
+def parse_mf1_mt451(file_obj: TextIO) -> dict:
+    # Information about target/projectile
+    ZA, AWR, LRP, LFI, NLIB, NMOD = get_head_record(file_obj)
+    data = {
+        'ZA': ZA, 'AWR': AWR, 'LRP': LRP,
+        'LFI': LFI, 'NLIB': NLIB, 'NMOD': NMOD
+    }
+
+    # Control record 1
+    ELIS, STA, LIS, LISO, _, NFOR = get_cont_record(file_obj)
+    data['ELIS'] = ELIS
+    data['STA'] = STA
+    data['LIS'] = LIS
+    data['LISO'] = LISO
+    data['NFOR'] = NFOR
+
+    # Control record 2
+    AWI, EMAX, LREL, _, NSUB, NVER = get_cont_record(file_obj)
+    data['AWI'] = AWI
+    data['EMAX'] = EMAX
+    data['LREL'] = LREL
+    data['NSUB'] = NSUB
+    data['NVER'] = NVER
+
+    # Control record 3
+    TEMP, _, LDRV, _, NWD, NXC = get_cont_record(file_obj)
+    data['TEMP'] = TEMP
+    data['LDRV'] = LDRV
+    data['NWD'] = NWD
+    data['NXC'] = NXC
+
+    # Text records
+    text = [get_text_record(file_obj) for i in range(NWD)]
+    if len(text) >= 5:
+        data['ZSYMAM'] = text[0][0:11]
+        data['ALAB'] = text[0][11:22]
+        data['EDATE'] = text[0][22:32]
+        data['AUTH'] = text[0][32:66]
+        data['REF'] = text[1][1:22]
+        data['DDATE'] = text[1][22:32]
+        data['RDATE'] = text[1][33:43]
+        data['ENDATE'] = text[1][55:63]
+        data['HSUB'] = text[2:5]
+        data['description'] = text[5:]
+    else:
+        data['ZSYMAM'] = None
+
+    # File numbers, reaction designations, and number of records
+    data['section_list'] = []
+    for _ in range(NXC):
+        _, _, mf, mt, nc, mod = get_cont_record(file_obj, skip_c=True)
+        data['section_list'].append((mf, mt, nc, mod))
+
+    return data
+
+
 def parse_mf3(file_obj: TextIO) -> dict:
     # Generate cross section
     ZA, AWR, *_ = get_head_record(file_obj)
@@ -296,11 +352,10 @@ class Evaluation:
             fh.close()
 
         self.section_data = {}
-
         for (mf, mt), text in self.section.items():
             file_obj = io.StringIO(text)
             if mf == 1 and mt == 451:
-                self.section_data[mf, mt] = self._read_mf1_mt451(file_obj)
+                self.section_data[mf, mt] = parse_mf1_mt451(file_obj)
             elif mf == 3:
                 self.section_data[mf, mt] = parse_mf3(file_obj)
             elif mf == 4:
@@ -314,60 +369,6 @@ class Evaluation:
         return '<{} for {} {}>'.format(_SUBLIBRARY[metadata['NSUB']], name,
                                        _LIBRARY[metadata['NLIB']])
 
-    def _read_mf1_mt451(self, file_obj: TextIO) -> dict:
-        # Information about target/projectile
-        ZA, AWR, LRP, LFI, NLIB, NMOD = get_head_record(file_obj)
-        data = {
-            'ZA': ZA, 'AWR': AWR, 'LRP': LRP,
-            'LFI': LFI, 'NLIB': NLIB, 'NMOD': NMOD
-        }
-
-        # Control record 1
-        ELIS, STA, LIS, LISO, _, NFOR = get_cont_record(file_obj)
-        data['ELIS'] = ELIS
-        data['STA'] = STA
-        data['LIS'] = LIS
-        data['LISO'] = LISO
-        data['NFOR'] = NFOR
-
-        # Control record 2
-        AWI, EMAX, LREL, _, NSUB, NVER = get_cont_record(file_obj)
-        data['AWI'] = AWI
-        data['EMAX'] = EMAX
-        data['LREL'] = LREL
-        data['NSUB'] = NSUB
-        data['NVER'] = NVER
-
-        # Control record 3
-        TEMP, _, LDRV, _, NWD, NXC = get_cont_record(file_obj)
-        data['TEMP'] = TEMP
-        data['LDRV'] = LDRV
-        data['NWD'] = NWD
-        data['NXC'] = NXC
-
-        # Text records
-        text = [get_text_record(file_obj) for i in range(NWD)]
-        if len(text) >= 5:
-            data['ZSYMAM'] = text[0][0:11]
-            data['ALAB'] = text[0][11:22]
-            data['EDATE'] = text[0][22:32]
-            data['AUTH'] = text[0][32:66]
-            data['REF'] = text[1][1:22]
-            data['DDATE'] = text[1][22:32]
-            data['RDATE'] = text[1][33:43]
-            data['ENDATE'] = text[1][55:63]
-            data['HSUB'] = text[2:5]
-            data['description'] = text[5:]
-        else:
-            data['ZSYMAM'] = None
-
-        # File numbers, reaction designations, and number of records
-        data['section_list'] = []
-        for _ in range(NXC):
-            _, _, mf, mt, nc, mod = get_cont_record(file_obj, skip_c=True)
-            data['section_list'].append((mf, mt, nc, mod))
-
-        return data
 
     @property
     def gnds_name(self):
