@@ -188,15 +188,15 @@ def parse_mf5(file_obj: TextIO) -> dict:
         if LF == 1:
             dist = ArbitraryTabulated.dict_from_endf(file_obj, params)
         elif LF == 5:
-            return GeneralEvaporation.from_endf(file_obj, params)
+            return GeneralEvaporation.dict_from_endf(file_obj, params)
         elif LF == 7:
-            return MaxwellEnergy.from_endf(file_obj, params)
+            return MaxwellEnergy.dict_from_endf(file_obj, params)
         elif LF == 9:
-            return Evaporation.from_endf(file_obj, params)
+            return Evaporation.dict_from_endf(file_obj, params)
         elif LF == 11:
-            return WattEnergy.from_endf(file_obj, params)
+            return WattEnergy.dict_from_endf(file_obj, params)
         elif LF == 12:
-            return MadlandNix.from_endf(file_obj, params)
+            return MadlandNix.dict_from_endf(file_obj, params)
 
         subsection['distribution'] = dist
         data['subsections'].append(subsection)
