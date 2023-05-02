@@ -173,19 +173,27 @@ class Evaluation:
         if need_to_close:
             fh.close()
 
-        self._read_mf1_mt451()
-        self._read_mf3()
-        self._read_mf4()
-        self._read_mf5()
+        self.cross_sections = {}
+        self.angular_distributions = {}
+        self.energy_distributions = {}
+
+        for (mf, mt), text in self.section.items():
+            file_obj = io.StringIO(text)
+            if mf == 1 and mt == 451:
+                self._read_mf1_mt451(file_obj)
+            elif mf == 3:
+                self._read_mf3(mt, file_obj)
+            elif mf == 4:
+                self._read_mf4(mt, file_obj)
+            elif mf == 5:
+                self._read_mf5(mt, file_obj)
 
     def __repr__(self):
         name = self.target['zsymam'].replace(' ', '')
         return '<{} for {} {}>'.format(self.info['sublibrary'], name,
                                        self.info['library'])
 
-    def _read_mf1_mt451(self):
-        file_obj = io.StringIO(self.section[1, 451])
-
+    def _read_mf1_mt451(self, file_obj):
         # Information about target/projectile
         items = get_head_record(file_obj)
         Z, A = divmod(items[0], 1000)
@@ -250,140 +258,114 @@ class Evaluation:
             _, _, mf, mt, nc, mod = get_cont_record(file_obj, skip_c=True)
             self.reaction_list.append((mf, mt, nc, mod))
 
-    def _read_mf3(self):
+    def _read_mf3(self, mt, file_obj):
         # Generate cross section
-        self.cross_sections = {}
-        for (mf, mt), text in self.section.items():
-            if mf != 3:
-                continue
+        ZA, AWR, *_ = get_head_record(file_obj)
+        params, xs = get_tab1_record(file_obj)
+        self.cross_sections[mt] = {
+            'ZA': ZA,
+            'AWR': AWR,
+            'QM': params[0],
+            'QI': params[1],
+            'LR': params[3],
+            'sigma': xs
+        }
 
-            file_obj = io.StringIO(text)
-            get_head_record(file_obj)
-            params, xs = get_tab1_record(file_obj)
-            self.cross_sections[mt] = {
-                'QM': params[0],
-                'QI': params[1],
-                'LR': params[3],
-                'sigma': xs
-            }
+    def _read_mf4(self, mt, file_obj):
+        # Read first two records
+        ZA, AWR, LVT, LTT, _, _ = get_head_record(file_obj)
+        _, _, LI, LCT, NK, NM = get_cont_record(file_obj)
 
-    def _read_mf4(self):
-        self.angular_distributions = {}
-        for (mf, mt), text in self.section.items():
-            if mf != 4:
-                continue
+        # initialize dictionary for angular distribution
+        self.angular_distributions[mt] = data = {
+            'ZA': ZA, 'AWR': AWR, 'LTT': LTT, 'LI': LI, 'LCT': LCT
+        }
 
-            file_obj = io.StringIO(text)
+        # Check for obsolete energy transformation matrix. If present, just skip
+        # it and keep reading
+        if LVT > 0:
+            warn('Obsolete energy transformation matrix in MF=4 angular '
+                    'distribution.')
+            for _ in range((NK + 5)//6):
+                file_obj.readline()
 
-            # Read HEAD record
-            items = get_head_record(file_obj)
-            LVT = items[2]
-            LTT = items[3]
+        def legendre_data(file_obj):
+            data = {}
+            params, data['E_int'] = get_tab2_record(file_obj)
+            n_energy = params[5]
 
-            # Read CONT record
-            items = get_cont_record(file_obj)
-            LI = items[2]
-            LCT = items[3]
-            NK = items[4]
+            energy = np.zeros(n_energy)
+            a_l = []
+            for i in range(n_energy):
+                items, al = get_list_record(file_obj)
+                data['T'] = items[0]
+                energy[i] = items[1]
+                data['LT'] = items[2]
+                coefficients = np.array(al)
+                a_l.append(coefficients)
+            data['a_l'] = a_l
+            data['E'] = energy
+            return data
 
-            self.angular_distributions[mt] = data = {
-                'LTT': LTT,
-                'LI': LI,
-                'LCT': LCT,
-            }
+        def tabulated_data(file_obj):
+            data = {}
+            params, data['E_int'] = get_tab2_record(file_obj)
+            n_energy = params[5]
 
-            # Check for obsolete energy transformation matrix. If present, just skip
-            # it and keep reading
-            if LVT > 0:
-                warn('Obsolete energy transformation matrix in MF=4 angular '
-                     'distribution.')
-                for _ in range((NK + 5)//6):
-                    file_obj.readline()
+            energy = np.zeros(n_energy)
+            mu = []
+            for i in range(n_energy):
+                params, f = get_tab1_record(file_obj)
+                data['T'] = params[0]
+                energy[i] = params[1]
+                data['LT'] = params[2]
+                mu.append(f)
+            data['E'] = energy
+            data['mu'] = mu
+            return data
 
-            def legendre_data(file_obj):
-                data = {}
-                params, data['E_int'] = get_tab2_record(file_obj)
-                n_energy = params[5]
+        if LTT == 0 and LI == 1:
+            # Purely isotropic
+            pass
 
-                energy = np.zeros(n_energy)
-                a_l = []
-                for i in range(n_energy):
-                    items, al = get_list_record(file_obj)
-                    data['T'] = items[0]
-                    energy[i] = items[1]
-                    data['LT'] = items[2]
-                    coefficients = np.array(al)
-                    a_l.append(coefficients)
-                data['a_l'] = a_l
-                data['E'] = energy
-                return data
+        elif LTT == 1 and LI == 0:
+            # Legendre polynomial coefficients
+            data['legendre'] = legendre_data(file_obj)
 
-            def tabulated_data(file_obj):
-                data = {}
-                params, data['E_int'] = get_tab2_record(file_obj)
-                n_energy = params[5]
+        elif LTT == 2 and LI == 0:
+            # Tabulated probability distribution
+            data['tabulated'] = tabulated_data(file_obj)
 
-                energy = np.zeros(n_energy)
-                mu = []
-                for i in range(n_energy):
-                    params, f = get_tab1_record(file_obj)
-                    data['T'] = params[0]
-                    energy[i] = params[1]
-                    data['LT'] = params[2]
-                    mu.append(f)
-                data['E'] = energy
-                data['mu'] = mu
-                return data
+        elif LTT == 3 and LI == 0:
+            # Legendre for low energies / tabulated for high energies
+            data['legendre'] = legendre_data(file_obj)
+            data['tabulated'] = tabulated_data(file_obj)
 
-            if LTT == 0 and LI == 1:
-                # Purely isotropic
-                pass
+    def _read_mf5(self, mt, file_obj):
+        ZA, AWR, _, _, NK, _ = get_head_record(file_obj)
 
-            elif LTT == 1 and LI == 0:
-                # Legendre polynomial coefficients
-                data['legendre'] = legendre_data(file_obj)
+        self.energy_distributions[mt] = data = {'ZA': ZA, 'AWR': AWR, 'NK': NK}
+        data['subsections'] = []
+        for _ in range(NK):
+            subsection = {}
+            params, applicability = get_tab1_record(file_obj)
+            subsection['LF'] = LF = params[3]
+            subsection['p'] = applicability
+            if LF == 1:
+                dist = ArbitraryTabulated.dict_from_endf(file_obj, params)
+            elif LF == 5:
+                return GeneralEvaporation.from_endf(file_obj, params)
+            elif LF == 7:
+                return MaxwellEnergy.from_endf(file_obj, params)
+            elif LF == 9:
+                return Evaporation.from_endf(file_obj, params)
+            elif LF == 11:
+                return WattEnergy.from_endf(file_obj, params)
+            elif LF == 12:
+                return MadlandNix.from_endf(file_obj, params)
 
-            elif LTT == 2 and LI == 0:
-                # Tabulated probability distribution
-                data['tabulated'] = tabulated_data(file_obj)
-
-            elif LTT == 3 and LI == 0:
-                # Legendre for low energies / tabulated for high energies
-                data['legendre'] = legendre_data(file_obj)
-                data['tabulated'] = tabulated_data(file_obj)
-
-    def _read_mf5(self):
-        self.energy_distributions = {}
-        for (mf, mt), text in self.section.items():
-            if mf != 5:
-                continue
-
-            file_obj = io.StringIO(self.section[5, mt])
-            items = get_head_record(file_obj)
-            NK = items[4]
-
-            self.energy_distributions[mt] = data = {'NK': NK}
-            data['subsections'] = []
-            for _ in range(NK):
-                subsection = {}
-                params, applicability = get_tab1_record(file_obj)
-                subsection['LF'] = LF = params[3]
-                subsection['p'] = applicability
-                if LF == 1:
-                    dist = ArbitraryTabulated.dict_from_endf(file_obj, params)
-                elif LF == 5:
-                    return GeneralEvaporation.from_endf(file_obj, params)
-                elif LF == 7:
-                    return MaxwellEnergy.from_endf(file_obj, params)
-                elif LF == 9:
-                    return Evaporation.from_endf(file_obj, params)
-                elif LF == 11:
-                    return WattEnergy.from_endf(file_obj, params)
-                elif LF == 12:
-                    return MadlandNix.from_endf(file_obj, params)
-
-                subsection['distribution'] = dist
-                data['subsections'].append(subsection)
+            subsection['distribution'] = dist
+            data['subsections'].append(subsection)
 
     @property
     def gnds_name(self):
