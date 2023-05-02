@@ -8,6 +8,7 @@ http://www-nds.iaea.org/ndspub/documents/endf/endf102/endf102.pdf
 """
 import io
 from pathlib import PurePath
+from typing import TextIO
 from warnings import warn
 
 import numpy as np
@@ -173,27 +174,25 @@ class Evaluation:
         if need_to_close:
             fh.close()
 
-        self.cross_sections = {}
-        self.angular_distributions = {}
-        self.energy_distributions = {}
+        self.section_data = {}
 
         for (mf, mt), text in self.section.items():
             file_obj = io.StringIO(text)
             if mf == 1 and mt == 451:
                 self._read_mf1_mt451(file_obj)
             elif mf == 3:
-                self._read_mf3(mt, file_obj)
+                self.section_data[mf, mt] = self._read_mf3(file_obj)
             elif mf == 4:
-                self._read_mf4(mt, file_obj)
+                self.section_data[mf, mt] = self._read_mf4(file_obj)
             elif mf == 5:
-                self._read_mf5(mt, file_obj)
+                self.section_data[mf, mt] = self._read_mf5(file_obj)
 
     def __repr__(self):
         name = self.target['zsymam'].replace(' ', '')
         return '<{} for {} {}>'.format(self.info['sublibrary'], name,
                                        self.info['library'])
 
-    def _read_mf1_mt451(self, file_obj):
+    def _read_mf1_mt451(self, file_obj: TextIO):
         # Information about target/projectile
         items = get_head_record(file_obj)
         Z, A = divmod(items[0], 1000)
@@ -258,11 +257,11 @@ class Evaluation:
             _, _, mf, mt, nc, mod = get_cont_record(file_obj, skip_c=True)
             self.reaction_list.append((mf, mt, nc, mod))
 
-    def _read_mf3(self, mt, file_obj):
+    def _read_mf3(self, file_obj: TextIO) -> dict:
         # Generate cross section
         ZA, AWR, *_ = get_head_record(file_obj)
         params, xs = get_tab1_record(file_obj)
-        self.cross_sections[mt] = {
+        return {
             'ZA': ZA,
             'AWR': AWR,
             'QM': params[0],
@@ -271,15 +270,13 @@ class Evaluation:
             'sigma': xs
         }
 
-    def _read_mf4(self, mt, file_obj):
+    def _read_mf4(self, file_obj: TextIO) -> dict:
         # Read first two records
         ZA, AWR, LVT, LTT, _, _ = get_head_record(file_obj)
         _, _, LI, LCT, NK, NM = get_cont_record(file_obj)
 
         # initialize dictionary for angular distribution
-        self.angular_distributions[mt] = data = {
-            'ZA': ZA, 'AWR': AWR, 'LTT': LTT, 'LI': LI, 'LCT': LCT
-        }
+        data = {'ZA': ZA, 'AWR': AWR, 'LTT': LTT, 'LI': LI, 'LCT': LCT}
 
         # Check for obsolete energy transformation matrix. If present, just skip
         # it and keep reading
@@ -341,10 +338,12 @@ class Evaluation:
             data['legendre'] = legendre_data(file_obj)
             data['tabulated'] = tabulated_data(file_obj)
 
-    def _read_mf5(self, mt, file_obj):
+        return data
+
+    def _read_mf5(self, file_obj: TextIO) -> dict:
         ZA, AWR, _, _, NK, _ = get_head_record(file_obj)
 
-        self.energy_distributions[mt] = data = {'ZA': ZA, 'AWR': AWR, 'NK': NK}
+        data = {'ZA': ZA, 'AWR': AWR, 'NK': NK}
         data['subsections'] = []
         for _ in range(NK):
             subsection = {}
@@ -366,6 +365,8 @@ class Evaluation:
 
             subsection['distribution'] = dist
             data['subsections'].append(subsection)
+
+        return data
 
     @property
     def gnds_name(self):
