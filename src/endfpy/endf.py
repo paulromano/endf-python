@@ -91,6 +91,119 @@ def get_evaluations(filename):
     return evaluations
 
 
+def parse_mf3(file_obj: TextIO) -> dict:
+    # Generate cross section
+    ZA, AWR, *_ = get_head_record(file_obj)
+    params, xs = get_tab1_record(file_obj)
+    return {
+        'ZA': ZA,
+        'AWR': AWR,
+        'QM': params[0],
+        'QI': params[1],
+        'LR': params[3],
+        'sigma': xs
+    }
+
+
+def parse_mf4(file_obj: TextIO) -> dict:
+    # Read first two records
+    ZA, AWR, LVT, LTT, _, _ = get_head_record(file_obj)
+    _, _, LI, LCT, NK, NM = get_cont_record(file_obj)
+
+    # initialize dictionary for angular distribution
+    data = {'ZA': ZA, 'AWR': AWR, 'LTT': LTT, 'LI': LI, 'LCT': LCT}
+
+    # Check for obsolete energy transformation matrix. If present, just skip
+    # it and keep reading
+    if LVT > 0:
+        warn('Obsolete energy transformation matrix in MF=4 angular distribution.')
+        for _ in range((NK + 5)//6):
+            file_obj.readline()
+
+    def legendre_data(file_obj):
+        data = {}
+        params, data['E_int'] = get_tab2_record(file_obj)
+        n_energy = params[5]
+
+        energy = np.zeros(n_energy)
+        a_l = []
+        for i in range(n_energy):
+            items, al = get_list_record(file_obj)
+            data['T'] = items[0]
+            energy[i] = items[1]
+            data['LT'] = items[2]
+            coefficients = np.array(al)
+            a_l.append(coefficients)
+        data['a_l'] = a_l
+        data['E'] = energy
+        return data
+
+    def tabulated_data(file_obj):
+        data = {}
+        params, data['E_int'] = get_tab2_record(file_obj)
+        n_energy = params[5]
+
+        energy = np.zeros(n_energy)
+        mu = []
+        for i in range(n_energy):
+            params, f = get_tab1_record(file_obj)
+            data['T'] = params[0]
+            energy[i] = params[1]
+            data['LT'] = params[2]
+            mu.append(f)
+        data['E'] = energy
+        data['mu'] = mu
+        return data
+
+    if LTT == 0 and LI == 1:
+        # Purely isotropic
+        pass
+
+    elif LTT == 1 and LI == 0:
+        # Legendre polynomial coefficients
+        data['legendre'] = legendre_data(file_obj)
+
+    elif LTT == 2 and LI == 0:
+        # Tabulated probability distribution
+        data['tabulated'] = tabulated_data(file_obj)
+
+    elif LTT == 3 and LI == 0:
+        # Legendre for low energies / tabulated for high energies
+        data['legendre'] = legendre_data(file_obj)
+        data['tabulated'] = tabulated_data(file_obj)
+
+    return data
+
+
+def parse_mf5(file_obj: TextIO) -> dict:
+    ZA, AWR, _, _, NK, _ = get_head_record(file_obj)
+
+    data = {'ZA': ZA, 'AWR': AWR, 'NK': NK}
+    data['subsections'] = []
+    for _ in range(NK):
+        subsection = {}
+        params, applicability = get_tab1_record(file_obj)
+        subsection['LF'] = LF = params[3]
+        subsection['p'] = applicability
+        if LF == 1:
+            dist = ArbitraryTabulated.dict_from_endf(file_obj, params)
+        elif LF == 5:
+            return GeneralEvaporation.from_endf(file_obj, params)
+        elif LF == 7:
+            return MaxwellEnergy.from_endf(file_obj, params)
+        elif LF == 9:
+            return Evaporation.from_endf(file_obj, params)
+        elif LF == 11:
+            return WattEnergy.from_endf(file_obj, params)
+        elif LF == 12:
+            return MadlandNix.from_endf(file_obj, params)
+
+        subsection['distribution'] = dist
+        data['subsections'].append(subsection)
+
+    return data
+
+
 class Evaluation:
     """ENDF material evaluation with multiple files/sections
 
@@ -181,11 +294,11 @@ class Evaluation:
             if mf == 1 and mt == 451:
                 self._read_mf1_mt451(file_obj)
             elif mf == 3:
-                self.section_data[mf, mt] = self._read_mf3(file_obj)
+                self.section_data[mf, mt] = parse_mf3(file_obj)
             elif mf == 4:
-                self.section_data[mf, mt] = self._read_mf4(file_obj)
+                self.section_data[mf, mt] = parse_mf4(file_obj)
             elif mf == 5:
-                self.section_data[mf, mt] = self._read_mf5(file_obj)
+                self.section_data[mf, mt] = parse_mf5(file_obj)
 
     def __repr__(self):
         name = self.target['zsymam'].replace(' ', '')
@@ -256,117 +369,6 @@ class Evaluation:
         for i in range(NXC):
             _, _, mf, mt, nc, mod = get_cont_record(file_obj, skip_c=True)
             self.reaction_list.append((mf, mt, nc, mod))
-
-    def _read_mf3(self, file_obj: TextIO) -> dict:
-        # Generate cross section
-        ZA, AWR, *_ = get_head_record(file_obj)
-        params, xs = get_tab1_record(file_obj)
-        return {
-            'ZA': ZA,
-            'AWR': AWR,
-            'QM': params[0],
-            'QI': params[1],
-            'LR': params[3],
-            'sigma': xs
-        }
-
-    def _read_mf4(self, file_obj: TextIO) -> dict:
-        # Read first two records
-        ZA, AWR, LVT, LTT, _, _ = get_head_record(file_obj)
-        _, _, LI, LCT, NK, NM = get_cont_record(file_obj)
-
-        # initialize dictionary for angular distribution
-        data = {'ZA': ZA, 'AWR': AWR, 'LTT': LTT, 'LI': LI, 'LCT': LCT}
-
-        # Check for obsolete energy transformation matrix. If present, just skip
-        # it and keep reading
-        if LVT > 0:
-            warn('Obsolete energy transformation matrix in MF=4 angular '
-                    'distribution.')
-            for _ in range((NK + 5)//6):
-                file_obj.readline()
-
-        def legendre_data(file_obj):
-            data = {}
-            params, data['E_int'] = get_tab2_record(file_obj)
-            n_energy = params[5]
-
-            energy = np.zeros(n_energy)
-            a_l = []
-            for i in range(n_energy):
-                items, al = get_list_record(file_obj)
-                data['T'] = items[0]
-                energy[i] = items[1]
-                data['LT'] = items[2]
-                coefficients = np.array(al)
-                a_l.append(coefficients)
-            data['a_l'] = a_l
-            data['E'] = energy
-            return data
-
-        def tabulated_data(file_obj):
-            data = {}
-            params, data['E_int'] = get_tab2_record(file_obj)
-            n_energy = params[5]
-
-            energy = np.zeros(n_energy)
-            mu = []
-            for i in range(n_energy):
-                params, f = get_tab1_record(file_obj)
-                data['T'] = params[0]
-                energy[i] = params[1]
-                data['LT'] = params[2]
-                mu.append(f)
-            data['E'] = energy
-            data['mu'] = mu
-            return data
-
-        if LTT == 0 and LI == 1:
-            # Purely isotropic
-            pass
-
-        elif LTT == 1 and LI == 0:
-            # Legendre polynomial coefficients
-            data['legendre'] = legendre_data(file_obj)
-
-        elif LTT == 2 and LI == 0:
-            # Tabulated probability distribution
-            data['tabulated'] = tabulated_data(file_obj)
-
-        elif LTT == 3 and LI == 0:
-            # Legendre for low energies / tabulated for high energies
-            data['legendre'] = legendre_data(file_obj)
-            data['tabulated'] = tabulated_data(file_obj)
-
-        return data
-
-    def _read_mf5(self, file_obj: TextIO) -> dict:
-        ZA, AWR, _, _, NK, _ = get_head_record(file_obj)
-
-        data = {'ZA': ZA, 'AWR': AWR, 'NK': NK}
-        data['subsections'] = []
-        for _ in range(NK):
-            subsection = {}
-            params, applicability = get_tab1_record(file_obj)
-            subsection['LF'] = LF = params[3]
-            subsection['p'] = applicability
-            if LF == 1:
-                dist = ArbitraryTabulated.dict_from_endf(file_obj, params)
-            elif LF == 5:
-                return GeneralEvaporation.from_endf(file_obj, params)
-            elif LF == 7:
-                return MaxwellEnergy.from_endf(file_obj, params)
-            elif LF == 9:
-                return Evaporation.from_endf(file_obj, params)
-            elif LF == 11:
-                return WattEnergy.from_endf(file_obj, params)
-            elif LF == 12:
-                return MadlandNix.from_endf(file_obj, params)
-
-            subsection['distribution'] = dist
-            data['subsections'].append(subsection)
-
-        return data
 
     @property
     def gnds_name(self):
