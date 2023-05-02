@@ -20,11 +20,27 @@ from .records import get_head_record, get_text_record, get_cont_record, \
     get_tab1_record, get_list_record, get_tab2_record
 
 
-_LIBRARY = {0: 'ENDF/B', 1: 'ENDF/A', 2: 'JEFF', 3: 'EFF',
-            4: 'ENDF/B High Energy', 5: 'CENDL', 6: 'JENDL',
-            17: 'TENDL', 18: 'ROSFOND', 21: 'SG-21', 31: 'INDL/V',
-            32: 'INDL/A', 33: 'FENDL', 34: 'IRDF', 35: 'BROND',
-            36: 'INGDB-90', 37: 'FENDL/A', 41: 'BROND'}
+_LIBRARY = {
+    0: 'ENDF/B',
+    1: 'ENDF/A',
+    2: 'JEFF',
+    3: 'EFF',
+    4: 'ENDF/B High Energy',
+    5: 'CENDL',
+    6: 'JENDL',
+    17: 'TENDL',
+    18: 'ROSFOND',
+    21: 'SG-23',
+    31: 'INDL/V',
+    32: 'INDL/A',
+    33: 'FENDL',
+    34: 'IRDF',
+    35: 'BROND',
+    36: 'INGDB-90',
+    37: 'FENDL/A',
+    38: 'IAEA/PD',
+    41: 'BROND'
+}
 
 _SUBLIBRARY = {
     0: 'Photo-nuclear data',
@@ -222,10 +238,6 @@ class Evaluation:
         whether it's stable, and whether it's fissionable.
     projectile : dict
         Information about the projectile such as its mass.
-    reaction_list : list of 4-tuples
-        List of sections in the evaluation. The entries of the tuples are the
-        file (MF), section (MT), number of records (NC), and modification
-        indicator (MOD).
     section : dict
         Dictionary mapping (MF, MT) to corresponding section of the ENDF file.
 
@@ -238,10 +250,6 @@ class Evaluation:
             fh = filename_or_obj
             need_to_close = False
         self.section = {}
-        self.info = {}
-        self.target = {}
-        self.projectile = {}
-        self.reaction_list = []
 
         # Skip TPID record. Evaluators sometimes put in TPID records that are
         # ill-formated because they lack MF/MT values or put them in the wrong
@@ -275,14 +283,14 @@ class Evaluation:
                 fh.readline()
                 break
 
-            section_data = ''
+            section_text = ''
             while True:
                 line = fh.readline()
                 if line[72:75] == '  0':
                     break
                 else:
-                    section_data += line
-            self.section[MF, MT] = section_data
+                    section_text += line
+            self.section[MF, MT] = section_text
 
         if need_to_close:
             fh.close()
@@ -292,7 +300,7 @@ class Evaluation:
         for (mf, mt), text in self.section.items():
             file_obj = io.StringIO(text)
             if mf == 1 and mt == 451:
-                self._read_mf1_mt451(file_obj)
+                self.section_data[mf, mt] = self._read_mf1_mt451(file_obj)
             elif mf == 3:
                 self.section_data[mf, mt] = parse_mf3(file_obj)
             elif mf == 4:
@@ -301,74 +309,65 @@ class Evaluation:
                 self.section_data[mf, mt] = parse_mf5(file_obj)
 
     def __repr__(self):
-        name = self.target['zsymam'].replace(' ', '')
-        return '<{} for {} {}>'.format(self.info['sublibrary'], name,
-                                       self.info['library'])
+        metadata = self.section_data[1, 451]
+        name = metadata['ZSYMAM'].replace(' ', '')
+        return '<{} for {} {}>'.format(_SUBLIBRARY[metadata['NSUB']], name,
+                                       _LIBRARY[metadata['NLIB']])
 
-    def _read_mf1_mt451(self, file_obj: TextIO):
+    def _read_mf1_mt451(self, file_obj: TextIO) -> dict:
         # Information about target/projectile
-        items = get_head_record(file_obj)
-        Z, A = divmod(items[0], 1000)
-        self.target['atomic_number'] = Z
-        self.target['mass_number'] = A
-        self.target['mass'] = items[1]
-        self._LRP = items[2]
-        self.target['fissionable'] = (items[3] == 1)
-        try:
-            library = _LIBRARY[items[4]]
-        except KeyError:
-            library = 'Unknown'
-        self.info['modification'] = items[5]
+        ZA, AWR, LRP, LFI, NLIB, NMOD = get_head_record(file_obj)
+        data = {
+            'ZA': ZA, 'AWR': AWR, 'LRP': LRP,
+            'LFI': LFI, 'NLIB': NLIB, 'NMOD': NMOD
+        }
 
         # Control record 1
-        items = get_cont_record(file_obj)
-        self.target['excitation_energy'] = items[0]
-        self.target['stable'] = (int(items[1]) == 0)
-        self.target['state'] = items[2]
-        self.target['isomeric_state'] = m = items[3]
-        self.info['format'] = items[5]
-        assert self.info['format'] == 6
-
-        # Set correct excited state for Am242_m1, which is wrong in ENDF/B-VII.1
-        if Z == 95 and A == 242 and m == 1:
-            self.target['state'] = 2
+        ELIS, STA, LIS, LISO, _, NFOR = get_cont_record(file_obj)
+        data['ELIS'] = ELIS
+        data['STA'] = STA
+        data['LIS'] = LIS
+        data['LISO'] = LISO
+        data['NFOR'] = NFOR
 
         # Control record 2
-        items = get_cont_record(file_obj)
-        self.projectile['mass'] = items[0]
-        self.info['energy_max'] = items[1]
-        library_release = items[2]
-        self.info['sublibrary'] = _SUBLIBRARY[items[4]]
-        library_version = items[5]
-        self.info['library'] = (library, library_version, library_release)
+        AWI, EMAX, LREL, _, NSUB, NVER = get_cont_record(file_obj)
+        data['AWI'] = AWI
+        data['EMAX'] = EMAX
+        data['LREL'] = LREL
+        data['NSUB'] = NSUB
+        data['NVER'] = NVER
 
         # Control record 3
-        items = get_cont_record(file_obj)
-        self.target['temperature'] = items[0]
-        self.info['derived'] = (items[2] > 0)
-        NWD = items[4]
-        NXC = items[5]
+        TEMP, _, LDRV, _, NWD, NXC = get_cont_record(file_obj)
+        data['TEMP'] = TEMP
+        data['LDRV'] = LDRV
+        data['NWD'] = NWD
+        data['NXC'] = NXC
 
         # Text records
         text = [get_text_record(file_obj) for i in range(NWD)]
         if len(text) >= 5:
-            self.target['zsymam'] = text[0][0:11]
-            self.info['laboratory'] = text[0][11:22]
-            self.info['date'] = text[0][22:32]
-            self.info['author'] = text[0][32:66]
-            self.info['reference'] = text[1][1:22]
-            self.info['date_distribution'] = text[1][22:32]
-            self.info['date_release'] = text[1][33:43]
-            self.info['date_entry'] = text[1][55:63]
-            self.info['identifier'] = text[2:5]
-            self.info['description'] = text[5:]
+            data['ZSYMAM'] = text[0][0:11]
+            data['ALAB'] = text[0][11:22]
+            data['EDATE'] = text[0][22:32]
+            data['AUTH'] = text[0][32:66]
+            data['REF'] = text[1][1:22]
+            data['DDATE'] = text[1][22:32]
+            data['RDATE'] = text[1][33:43]
+            data['ENDATE'] = text[1][55:63]
+            data['HSUB'] = text[2:5]
+            data['description'] = text[5:]
         else:
-            self.target['zsymam'] = 'Unknown'
+            data['ZSYMAM'] = None
 
         # File numbers, reaction designations, and number of records
-        for i in range(NXC):
+        data['section_list'] = []
+        for _ in range(NXC):
             _, _, mf, mt, nc, mod = get_cont_record(file_obj, skip_c=True)
-            self.reaction_list.append((mf, mt, nc, mod))
+            data['section_list'].append((mf, mt, nc, mod))
+
+        return data
 
     @property
     def gnds_name(self):
