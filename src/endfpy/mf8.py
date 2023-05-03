@@ -5,7 +5,58 @@ import numpy as np
 from .records import get_head_record, get_list_record, get_tab1_record
 
 
+def parse_mf8_mt454(file_obj: TextIO) -> dict:
+    """Parse fission product yield data from MF=8, MT=454 / MT=459
+
+    Parameters
+    ----------
+    file_obj
+        File-like object to read from
+
+    Returns
+    -------
+    dict
+        Fission product yield data
+
+    """
+
+    # Determine number of energies
+    items = get_head_record(file_obj)
+    data = {'ZA': items[0], 'AWR': items[1], 'LE': items[2] - 1}
+    data['yields'] = []
+    for i in range(data['LE'] + 1):
+        # Determine i-th energy and number of products
+        (E, _, I, _, NN, NFP), values = get_list_record(file_obj)
+        yield_data = {'E': E, 'NN': NN, 'NFP': NFP}
+        yield_data['LE' if i == 0 else 'I'] = I
+
+        # Get yields for i-th energy
+        yield_data['products'] = products = []
+        for j in range(NFP):
+            ZAFP = values[4*j]
+            FPS = values[4*j + 1]
+            Y = (values[4*j + 2], values[4*j + 3])
+            products.append({'ZAFP': ZAFP, 'FPS': FPS, 'Y': Y})
+
+        data['yields'].append(yield_data)
+
+    return data
+
+
 def parse_mf8_mt457(file_obj: TextIO) -> dict:
+    """Parse radioactive decay data from MF=8, MT=457
+
+    Parameters
+    ----------
+    file_obj
+        File-like object to read from
+
+    Returns
+    -------
+    dict
+        Radioactive decay data
+
+    """
     # Get head record
     ZA, AWR, LIS, LISO, NST, NSP = get_head_record(file_obj)
     data = {'ZA': ZA, 'AWR': AWR, 'LIS': LIS, 'LISO': LISO, 'NST': NST, 'NSP': NSP}
