@@ -14,8 +14,7 @@ from warnings import warn
 import numpy as np
 
 from .data import gnds_name
-from .energy_distribution import ArbitraryTabulated, GeneralEvaporation, \
-    MaxwellEnergy, Evaporation,  WattEnergy, MadlandNix
+from .mf5 import parse_mf5
 from .records import get_head_record, get_text_record, get_cont_record, \
     get_tab1_record, get_list_record, get_tab2_record
 
@@ -243,35 +242,6 @@ def parse_mf4(file_obj: TextIO) -> dict:
         # Legendre for low energies / tabulated for high energies
         data['legendre'] = legendre_data(file_obj)
         data['tabulated'] = tabulated_data(file_obj)
-
-    return data
-
-
-def parse_mf5(file_obj: TextIO) -> dict:
-    ZA, AWR, _, _, NK, _ = get_head_record(file_obj)
-
-    data = {'ZA': ZA, 'AWR': AWR, 'NK': NK}
-    data['subsections'] = []
-    for _ in range(NK):
-        subsection = {}
-        params, applicability = get_tab1_record(file_obj)
-        subsection['LF'] = LF = params[3]
-        subsection['p'] = applicability
-        if LF == 1:
-            dist = ArbitraryTabulated.dict_from_endf(file_obj, params)
-        elif LF == 5:
-            return GeneralEvaporation.dict_from_endf(file_obj, params)
-        elif LF == 7:
-            return MaxwellEnergy.dict_from_endf(file_obj, params)
-        elif LF == 9:
-            return Evaporation.dict_from_endf(file_obj, params)
-        elif LF == 11:
-            return WattEnergy.dict_from_endf(file_obj, params)
-        elif LF == 12:
-            return MadlandNix.dict_from_endf(file_obj, params)
-
-        subsection['distribution'] = dist
-        data['subsections'].append(subsection)
 
     return data
 
