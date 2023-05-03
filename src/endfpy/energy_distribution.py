@@ -1,4 +1,5 @@
 from abc import ABC
+from typing import TextIO
 
 import numpy as np
 
@@ -11,7 +12,7 @@ class EnergyDistribution(ABC):
         pass
 
     @staticmethod
-    def from_endf(file_obj, params):
+    def from_endf(file_obj: TextIO, params: list):
         """Generate energy distribution from an ENDF evaluation
 
         Parameters
@@ -73,7 +74,7 @@ class ArbitraryTabulated(EnergyDistribution):
         self.pdf = pdf
 
     @staticmethod
-    def dict_from_endf(file_obj, params):
+    def dict_from_endf(file_obj: TextIO, params: list):
         """Generate arbitrary tabulated distribution from an ENDF evaluation
 
         Parameters
@@ -107,7 +108,7 @@ class ArbitraryTabulated(EnergyDistribution):
         return data
 
     @classmethod
-    def from_endf(cls, file_obj, params):
+    def from_endf(cls, file_obj: TextIO, params: list):
         data = cls.dict_from_endf(file_obj, params)
         return cls(data['E'], data['g'])
 
@@ -147,7 +148,7 @@ class GeneralEvaporation(EnergyDistribution):
         self.u = u
 
     @staticmethod
-    def dict_from_endf(file_obj, params):
+    def dict_from_endf(file_obj: TextIO, params: list):
         """Generate general evaporation spectrum from an ENDF evaluation
 
         Parameters
@@ -171,7 +172,7 @@ class GeneralEvaporation(EnergyDistribution):
         return {'U': params[0], 'theta': theta, 'g': g}
 
     @classmethod
-    def from_endf(cls, file_obj, params):
+    def from_endf(cls, file_obj: TextIO, params: list):
         data = cls.dict_from_endf(file_obj, params)
         return cls(data['theta'], data['g'], data['U'])
 
@@ -206,7 +207,7 @@ class MaxwellEnergy(EnergyDistribution):
         self.u = u
 
     @staticmethod
-    def dict_from_endf(file_obj, params):
+    def dict_from_endf(file_obj: TextIO, params: list):
         """Generate Maxwell distribution from an ENDF evaluation
 
         Parameters
@@ -229,7 +230,7 @@ class MaxwellEnergy(EnergyDistribution):
         return {'U': params[0], 'theta': theta}
 
     @classmethod
-    def from_endf(cls, file_obj, params):
+    def from_endf(cls, file_obj: TextIO, params: list):
         data = cls.dict_from_endf(file_obj, params)
         return cls(data['theta'], data['U'])
 
@@ -264,7 +265,7 @@ class Evaporation(EnergyDistribution):
         self.u = u
 
     @staticmethod
-    def dict_from_endf(file_obj, params):
+    def dict_from_endf(file_obj: TextIO, params: list):
         """Generate evaporation spectrum from an ENDF evaluation
 
         Parameters
@@ -287,7 +288,7 @@ class Evaporation(EnergyDistribution):
         return {'U': params[0], 'theta': theta}
 
     @classmethod
-    def from_endf(cls, file_obj, params):
+    def from_endf(cls, file_obj: TextIO, params: list):
         data = cls.dict_from_endf(file_obj, params)
         return cls(data['theta'], data['U'])
 
@@ -326,7 +327,7 @@ class WattEnergy(EnergyDistribution):
         self.u = u
 
     @staticmethod
-    def dict_from_endf(file_obj, params):
+    def dict_from_endf(file_obj: TextIO, params: list):
         """Generate Watt fission spectrum from an ENDF evaluation
 
         Parameters
@@ -391,7 +392,7 @@ class MadlandNix(EnergyDistribution):
         self.tm = tm
 
     @staticmethod
-    def dict_from_endf(file_obj, params):
+    def dict_from_endf(file_obj: TextIO, params: list):
         """Generate Madland-Nix fission spectrum from an ENDF evaluation
 
         Parameters
@@ -414,6 +415,6 @@ class MadlandNix(EnergyDistribution):
         return {'EFL': params[0], 'EFH': params[1], 'T_M': T_M}
 
     @classmethod
-    def from_endf(cls, file_obj, params):
+    def from_endf(cls, file_obj: TextIO, params: list):
         data = cls.dict_from_endf(file_obj, params)
         return cls(data['EFL'], data['EFH'], data['T_M'])
