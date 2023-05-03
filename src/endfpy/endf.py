@@ -20,6 +20,7 @@ from .mf5 import parse_mf5
 from .mf6 import parse_mf6
 from .mf7 import parse_mf7_mt2, parse_mf7_mt4
 from .mf8 import parse_mf8_mt454, parse_mf8_mt457
+from .mf9 import parse_mf9_mf10
 from .records import get_head_record, get_text_record, get_cont_record, \
     get_tab1_record, get_list_record, get_tab2_record
 
@@ -327,26 +328,28 @@ class Material:
             fh.close()
 
         self.section_data = {}
-        for (mf, mt), text in self.section.items():
+        for (MF, MT), text in self.section.items():
             file_obj = io.StringIO(text)
-            if mf == 1 and mt == 451:
-                self.section_data[mf, mt] = parse_mf1_mt451(file_obj)
-            elif mf == 3:
-                self.section_data[mf, mt] = parse_mf3(file_obj)
-            elif mf == 4:
-                self.section_data[mf, mt] = parse_mf4(file_obj)
-            elif mf == 5:
-                self.section_data[mf, mt] = parse_mf5(file_obj)
-            elif mf == 6:
-                self.section_data[mf, mt] = parse_mf6(file_obj)
-            elif mf == 7 and mt == 2:
-                self.section_data[mf, mt] = parse_mf7_mt2(file_obj)
-            elif mf == 7 and mt == 4:
-                self.section_data[mf, mt] = parse_mf7_mt4(file_obj)
-            elif mf == 8 and mt in (454, 459):
-                self.section_data[mf, mt] = parse_mf8_mt454(file_obj)
-            elif mf == 8 and mt == 457:
-                self.section_data[mf, mt] = parse_mf8_mt457(file_obj)
+            if MF == 1 and MT == 451:
+                self.section_data[MF, MT] = parse_mf1_mt451(file_obj)
+            elif MF == 3:
+                self.section_data[MF, MT] = parse_mf3(file_obj)
+            elif MF == 4:
+                self.section_data[MF, MT] = parse_mf4(file_obj)
+            elif MF == 5:
+                self.section_data[MF, MT] = parse_mf5(file_obj)
+            elif MF == 6:
+                self.section_data[MF, MT] = parse_mf6(file_obj)
+            elif MF == 7 and MT == 2:
+                self.section_data[MF, MT] = parse_mf7_mt2(file_obj)
+            elif MF == 7 and MT == 4:
+                self.section_data[MF, MT] = parse_mf7_mt4(file_obj)
+            elif MF == 8 and MT in (454, 459):
+                self.section_data[MF, MT] = parse_mf8_mt454(file_obj)
+            elif MF == 8 and MT == 457:
+                self.section_data[MF, MT] = parse_mf8_mt457(file_obj)
+            elif MF in (9, 10):
+                self.section_data[MF, MT] = parse_mf9_mf10(file_obj, MF)
             else:
                 pass
 
