@@ -19,6 +19,7 @@ from .data import gnds_name
 from .mf5 import parse_mf5
 from .mf6 import parse_mf6
 from .mf7 import parse_mf7_mt2, parse_mf7_mt4
+from .mf8 import parse_mf8_mt457
 from .records import get_head_record, get_text_record, get_cont_record, \
     get_tab1_record, get_list_record, get_tab2_record
 
@@ -342,6 +343,8 @@ class Material:
                 self.section_data[mf, mt] = parse_mf7_mt2(file_obj)
             elif mf == 7 and mt == 4:
                 self.section_data[mf, mt] = parse_mf7_mt4(file_obj)
+            elif mf == 8 and mt == 457:
+                self.section_data[mf, mt] = parse_mf8_mt457(file_obj)
             else:
                 pass
 
