@@ -1,4 +1,5 @@
 import re
+from typing import TextIO, Tuple
 
 import numpy as np
 
@@ -122,7 +123,7 @@ def get_head_record(file_obj):
     return (ZA, AWR, L1, L2, N1, N2)
 
 
-def get_list_record(file_obj):
+def get_list_record(file_obj: TextIO) -> Tuple[list, np.ndarray]:
     """Return data from a LIST record in an ENDF-6 file.
 
     Parameters
@@ -134,7 +135,7 @@ def get_list_record(file_obj):
     -------
     list
         The six items within the header
-    list
+    numpy.ndarray
         The values within the list
 
     """
@@ -143,12 +144,12 @@ def get_list_record(file_obj):
     NPL = items[4]
 
     # read items
-    b = []
+    b = np.empty(NPL)
     for i in range((NPL - 1)//6 + 1):
         line = file_obj.readline()
         n = min(6, NPL - 6*i)
         for j in range(n):
-            b.append(float_endf(line[11*j:11*(j + 1)]))
+            b[6*i + j] = float_endf(line[11*j:11*(j + 1)])
 
     return (items, b)
 
