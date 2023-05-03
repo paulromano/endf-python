@@ -11,16 +11,13 @@ def parse_mf12(file_obj: TextIO) -> dict:
     ----------
     file_obj
         File-like object to read from
-    MF
-        File number
 
     Returns
     -------
     dict
-        Radionuclide production data
+        Photon production multiplicity / transition probability data
 
     """
-
     ZA, AWR, LO, LG, NK, _ = get_head_record(file_obj)
     data = {'ZA': ZA, 'AWR': AWR, 'LO': LO, 'NK': NK}
 
@@ -49,7 +46,7 @@ def parse_mf12(file_obj: TextIO) -> dict:
         for i in range(NT):
             if LG == 1:
                 ES, TP = values[2*i : 2*(i + 1)]
-                transition.append({'ES': ES, 'TP': TP, 'GP': GP})
+                transition.append({'ES': ES, 'TP': TP})
             elif LG == 2:
                 ES, TP, GP = values[3*i : 3*(i + 1)]
                 transition.append({'ES': ES, 'TP': TP, 'GP': GP})
