@@ -263,15 +263,13 @@ class Material:
 
     Attributes
     ----------
-    info : dict
-        Miscellaneous information about the material.
-    target : dict
-        Information about the target material, such as its mass, isomeric state,
-        whether it's stable, and whether it's fissionable.
-    projectile : dict
-        Information about the projectile such as its mass.
+    MAT : int
+        ENDF material number
     section : dict
         Dictionary mapping (MF, MT) to corresponding section of the ENDF file.
+    section_data : dict
+        Dictionary mapping (MF, MT) to a dictionary representing the
+        corresponding section of the ENDF file.
 
     """
     def __init__(self, filename_or_obj):
@@ -322,6 +320,7 @@ class Material:
                     break
                 else:
                     section_text += line
+            self.MAT = MAT
             self.section[MF, MT] = section_text
 
         if need_to_close:
