@@ -7,27 +7,17 @@ from .records import get_tab2_record, get_list_record, get_head_record, \
 
 
 def parse_mf6(file_obj: TextIO) -> dict:
-    """Generate products from MF=6 in an ENDF evaluation
+    """Parse product energy-angle distributions from MF=6
 
     Parameters
     ----------
-    ev : openmc.data.endf.Evaluation
-        ENDF evaluation to read from
-    mt : int
-        The MT value of the reaction to get products for
-
-    Raises
-    ------
-    IOError
-        When the Kalbach-Mann systematics is used, but the product
-        is not defined in the 'center-of-mass' system. The breakup logic
-        is not implemented which can lead to this error being raised while
-        the definition of the product is correct.
+    file_obj
+        File-like object to read from
 
     Returns
     -------
-    products : list of openmc.data.Product
-        Products of the reaction
+    dict
+        Product energy-angle distribution data
 
     """
     # Read HEAD record

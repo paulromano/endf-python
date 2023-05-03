@@ -43,7 +43,7 @@ class EnergyDistribution(ABC):
 
     @staticmethod
     def from_endf(file_obj: TextIO, params: list):
-        """Generate energy distribution from an ENDF evaluation
+        """Generate energy distribution from MF=5 data
 
         Parameters
         ----------
@@ -104,23 +104,19 @@ class ArbitraryTabulated(EnergyDistribution):
         self.pdf = pdf
 
     @staticmethod
-    def dict_from_endf(file_obj: TextIO, params: list):
-        """Generate arbitrary tabulated distribution from an ENDF evaluation
+    def dict_from_endf(file_obj: TextIO, params: list) -> dict:
+        """Parse arbitrary tabulated distribution (LF=1)
 
         Parameters
         ----------
         file_obj : file-like object
             ENDF file positioned at the start of a section for an energy
             distribution.
-        params : list
-            List of parameters at the start of the energy distribution that
-            includes the LF value indicating what type of energy distribution is
-            present.
 
         Returns
         -------
-        openmc.data.ArbitraryTabulated
-            Arbitrary tabulated distribution
+        dict
+            Arbitrary tabulated distribution data
 
         """
         data = {}
@@ -178,8 +174,8 @@ class GeneralEvaporation(EnergyDistribution):
         self.u = u
 
     @staticmethod
-    def dict_from_endf(file_obj: TextIO, params: list):
-        """Generate general evaporation spectrum from an ENDF evaluation
+    def dict_from_endf(file_obj: TextIO, params: list) -> dict:
+        """Parse general evaporation spectrum (MF=5)
 
         Parameters
         ----------
@@ -237,8 +233,8 @@ class MaxwellEnergy(EnergyDistribution):
         self.u = u
 
     @staticmethod
-    def dict_from_endf(file_obj: TextIO, params: list):
-        """Generate Maxwell distribution from an ENDF evaluation
+    def dict_from_endf(file_obj: TextIO, params: list) -> dict:
+        """Parse Maxwellian fission spectrum (LF=7)
 
         Parameters
         ----------
@@ -252,8 +248,8 @@ class MaxwellEnergy(EnergyDistribution):
 
         Returns
         -------
-        openmc.data.MaxwellEnergy
-            Maxwell distribution
+        dict
+            Maxwellian distribution data
 
         """
         _, theta = get_tab1_record(file_obj)
@@ -295,8 +291,8 @@ class Evaporation(EnergyDistribution):
         self.u = u
 
     @staticmethod
-    def dict_from_endf(file_obj: TextIO, params: list):
-        """Generate evaporation spectrum from an ENDF evaluation
+    def dict_from_endf(file_obj: TextIO, params: list) -> dict:
+        """Parse evaporation spectrum (LF=9)
 
         Parameters
         ----------
@@ -310,8 +306,8 @@ class Evaporation(EnergyDistribution):
 
         Returns
         -------
-        openmc.data.Evaporation
-            Evaporation spectrum
+        data
+            Evaporation spectrum data
 
         """
         _, theta = get_tab1_record(file_obj)
@@ -357,8 +353,8 @@ class WattEnergy(EnergyDistribution):
         self.u = u
 
     @staticmethod
-    def dict_from_endf(file_obj: TextIO, params: list):
-        """Generate Watt fission spectrum from an ENDF evaluation
+    def dict_from_endf(file_obj: TextIO, params: list) -> dict:
+        """Parse energy-dependent Watt spectrum (MF=11)
 
         Parameters
         ----------
@@ -372,8 +368,8 @@ class WattEnergy(EnergyDistribution):
 
         Returns
         -------
-        openmc.data.WattEnergy
-            Watt fission spectrum
+        data
+            Watt fission spectrum data
 
         """
         _, a = get_tab1_record(file_obj)
@@ -422,8 +418,8 @@ class MadlandNix(EnergyDistribution):
         self.tm = tm
 
     @staticmethod
-    def dict_from_endf(file_obj: TextIO, params: list):
-        """Generate Madland-Nix fission spectrum from an ENDF evaluation
+    def dict_from_endf(file_obj: TextIO, params: list) -> dict:
+        """Parse Madland-Nix fission spectrum (LF=12)
 
         Parameters
         ----------
@@ -437,8 +433,8 @@ class MadlandNix(EnergyDistribution):
 
         Returns
         -------
-        openmc.data.MadlandNix
-            Madland-Nix fission spectrum
+        data
+            Madland-Nix fission spectrum data
 
         """
         _, T_M = get_tab1_record(file_obj)

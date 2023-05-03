@@ -5,17 +5,16 @@ from .records import get_head_record, get_tab1_record, get_list_record, \
 
 
 def parse_mf7_mt2(file_obj: TextIO) -> dict:
-    """Generate thermal scattering data from an ENDF file
+    """Parse elastic thermal scattering data from MF=7, MT=2
 
     Parameters
     ----------
-    ev_or_filename : openmc.data.endf.Evaluation or str
-        ENDF evaluation to read from. If given as a string, it is assumed to
-        be the filename for the ENDF file.
+    file_obj
+        File-like object to read from
 
     Returns
     -------
-    openmc.data.ThermalScattering
+    dict
         Thermal scattering data
 
     """
@@ -59,6 +58,20 @@ def parse_mf7_mt2(file_obj: TextIO) -> dict:
 
 
 def parse_mf7_mt4(file_obj: TextIO) -> dict:
+    """Parse inelastic thermal scattering data from MF=7, MT=4
+
+    Parameters
+    ----------
+    file_obj
+        File-like object to read from
+
+    Returns
+    -------
+    dict
+        Thermal scattering data
+
+    """
+
     # Read incoherent inelastic data
     ZA, AWR, _, LAT, LASYM, _ = get_head_record(file_obj)
     data = {'ZA': ZA, 'AWR': AWR, 'LAT': LAT, 'LASYM': LASYM}

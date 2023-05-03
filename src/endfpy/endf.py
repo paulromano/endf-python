@@ -1,9 +1,11 @@
-"""Module for parsing and manipulating data from ENDF evaluations.
+"""Module for parsing and manipulating data from ENDF files.
 
 All the classes and functions in this module are based on document
 ENDF-102 titled "Data Formats and Procedures for the Evaluated Nuclear
 Data File ENDF-6". The latest version from June 2009 can be found at
 http://www-nds.iaea.org/ndspub/documents/endf/endf102/endf102.pdf
+
+TODO: Update link above
 
 """
 import io
@@ -82,8 +84,8 @@ SUM_RULES = {1: [2, 3],
              107: list(range(800, 850))}
 
 
-def get_evaluations(filename):
-    """Return a list of all evaluations within an ENDF file.
+def get_materials(filename):
+    """Return a list of all materials within an ENDF file.
 
     Parameters
     ----------
@@ -93,10 +95,10 @@ def get_evaluations(filename):
     Returns
     -------
     list
-        A list of :class:`openmc.data.endf.Evaluation` instances.
+        A list of :class:`Material` instances.
 
     """
-    evaluations = []
+    materials = []
     with open(str(filename), 'r') as fh:
         while True:
             pos = fh.tell()
@@ -104,8 +106,8 @@ def get_evaluations(filename):
             if line[66:70] == '  -1':
                 break
             fh.seek(pos)
-            evaluations.append(Evaluation(fh))
-    return evaluations
+            materials.append(Material(fh))
+    return materials
 
 
 def parse_mf1_mt451(file_obj: TextIO) -> dict:
@@ -248,8 +250,8 @@ def parse_mf4(file_obj: TextIO) -> dict:
     return data
 
 
-class Evaluation:
-    """ENDF material evaluation with multiple files/sections
+class Material:
+    """ENDF material with multiple files/sections
 
     Parameters
     ----------
@@ -260,7 +262,7 @@ class Evaluation:
     Attributes
     ----------
     info : dict
-        Miscellaneous information about the evaluation.
+        Miscellaneous information about the material.
     target : dict
         Information about the target material, such as its mass, isomeric state,
         whether it's stable, and whether it's fissionable.
@@ -286,7 +288,7 @@ class Evaluation:
             fh.readline()
         MF = 0
 
-        # Determine MAT number for this evaluation
+        # Determine MAT number for this material
         while MF == 0:
             position = fh.tell()
             line = fh.readline()
