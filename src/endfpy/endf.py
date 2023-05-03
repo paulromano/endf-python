@@ -15,6 +15,7 @@ import numpy as np
 
 from .data import gnds_name
 from .mf5 import parse_mf5
+from .mf6 import parse_mf6
 from .records import get_head_record, get_text_record, get_cont_record, \
     get_tab1_record, get_list_record, get_tab2_record
 
@@ -332,6 +333,8 @@ class Evaluation:
                 self.section_data[mf, mt] = parse_mf4(file_obj)
             elif mf == 5:
                 self.section_data[mf, mt] = parse_mf5(file_obj)
+            elif mf == 6:
+                self.section_data[mf, mt] = parse_mf6(file_obj)
 
     def __repr__(self):
         metadata = self.section_data[1, 451]
