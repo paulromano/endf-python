@@ -124,7 +124,7 @@ class ChargedParticleElasticScattering:
 
     @staticmethod
     def dict_from_endf(file_obj: TextIO) -> dict:
-        return {}
+        raise NotImplementedError
 
 
 class NBodyPhaseSpace:
@@ -143,4 +143,4 @@ class LaboratoryAngleEnergy:
 
     @staticmethod
     def dict_from_endf(file_obj: TextIO) -> dict:
-        return {}
+        raise NotImplementedError
