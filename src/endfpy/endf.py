@@ -12,7 +12,7 @@ import io
 from pathlib import PurePath
 
 from .data import gnds_name
-from .mf1 import parse_mf1_mt451
+from .mf1 import parse_mf1_mt451, parse_mf1_mt452, parse_mf1_mt455
 from .mf3 import parse_mf3
 from .mf4 import parse_mf4
 from .mf5 import parse_mf5
@@ -192,6 +192,10 @@ class Material:
             file_obj = io.StringIO(text)
             if MF == 1 and MT == 451:
                 self.section_data[MF, MT] = parse_mf1_mt451(file_obj)
+            elif MF == 1 and MT in (452, 456):
+                self.section_data[MF, MT] = parse_mf1_mt452(file_obj)
+            elif MF == 1 and MT == 455:
+                self.section_data[MF, MT] = parse_mf1_mt455(file_obj)
             elif MF == 3:
                 self.section_data[MF, MT] = parse_mf3(file_obj)
             elif MF == 4:
