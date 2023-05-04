@@ -145,3 +145,48 @@ def parse_mf1_mt455(file_obj: TextIO) -> dict:
         _, data['nu'] = get_tab1_record(file_obj)
 
     return data
+
+
+def parse_mf1_mt458(file_obj: TextIO) -> dict:
+    """Parse components of fission energy release from MF=1, MT=458
+
+    Parameters
+    ----------
+    file_obj
+        File-like object to read from
+
+    Returns
+    -------
+    dict
+        Components of fission energy release
+
+    """
+    # Read first record and check whether any components appear as
+    # tabulated functions
+    ZA, AWR, _, LFC, _, NFC = get_cont_record(file_obj)
+    data = {'ZA': ZA, 'AWR': AWR, 'LFC': LFC}
+
+    # Parse the ENDF LIST into an array.
+    items, values = get_list_record(file_obj)
+    data['NPLY'] = items[3]
+
+    components = ('EFR', 'ENP', 'END', 'EGP', 'EGD', 'EB', 'ENU', 'ER', 'ET')
+
+    # Associate each set of values and uncertainties with its label.
+    for i, name in enumerate(components):
+        coeffs = values[2*i::18]
+        deltas = values[2*i + 1::18]
+        data[name] = list(zip(coeffs, deltas))
+
+    # Check for tabulated data
+    if LFC == 1:
+        data['NFC'] = NFC
+        for _ in range(NFC):
+            # Get tabulated function
+            (_, _, LDRV, IFC), EIFC = get_tab1_record(file_obj)
+
+            # Determine which component it is and replace in dictionary
+            name = components[IFC]
+            data[name] = {'LDRV': LDRV, 'EIFC': EIFC}
+
+    return data
