@@ -10,12 +10,11 @@ TODO: Update link above
 """
 import io
 from pathlib import PurePath
-from typing import TextIO
-from warnings import warn
-
-import numpy as np
 
 from .data import gnds_name
+from .mf1 import parse_mf1_mt451
+from .mf3 import parse_mf3
+from .mf4 import parse_mf4
 from .mf5 import parse_mf5
 from .mf6 import parse_mf6
 from .mf7 import parse_mf7_mt2, parse_mf7_mt4
@@ -23,8 +22,6 @@ from .mf8 import parse_mf8_mt454, parse_mf8_mt457
 from .mf9 import parse_mf9_mf10
 from .mf12 import parse_mf12
 from .mf13 import parse_mf13
-from .records import get_head_record, get_text_record, get_cont_record, \
-    get_tab1_record, get_list_record, get_tab2_record
 
 
 _LIBRARY = {
@@ -114,144 +111,6 @@ def get_materials(filename):
     return materials
 
 
-def parse_mf1_mt451(file_obj: TextIO) -> dict:
-    # Information about target/projectile
-    ZA, AWR, LRP, LFI, NLIB, NMOD = get_head_record(file_obj)
-    data = {
-        'ZA': ZA, 'AWR': AWR, 'LRP': LRP,
-        'LFI': LFI, 'NLIB': NLIB, 'NMOD': NMOD
-    }
-
-    # Control record 1
-    ELIS, STA, LIS, LISO, _, NFOR = get_cont_record(file_obj)
-    data['ELIS'] = ELIS
-    data['STA'] = STA
-    data['LIS'] = LIS
-    data['LISO'] = LISO
-    data['NFOR'] = NFOR
-
-    # Control record 2
-    AWI, EMAX, LREL, _, NSUB, NVER = get_cont_record(file_obj)
-    data['AWI'] = AWI
-    data['EMAX'] = EMAX
-    data['LREL'] = LREL
-    data['NSUB'] = NSUB
-    data['NVER'] = NVER
-
-    # Control record 3
-    TEMP, _, LDRV, _, NWD, NXC = get_cont_record(file_obj)
-    data['TEMP'] = TEMP
-    data['LDRV'] = LDRV
-    data['NWD'] = NWD
-    data['NXC'] = NXC
-
-    # Text records
-    text = [get_text_record(file_obj) for i in range(NWD)]
-    if len(text) >= 5:
-        data['ZSYMAM'] = text[0][0:11]
-        data['ALAB'] = text[0][11:22]
-        data['EDATE'] = text[0][22:32]
-        data['AUTH'] = text[0][32:66]
-        data['REF'] = text[1][1:22]
-        data['DDATE'] = text[1][22:32]
-        data['RDATE'] = text[1][33:43]
-        data['ENDATE'] = text[1][55:63]
-        data['HSUB'] = text[2:5]
-        data['description'] = text[5:]
-    else:
-        data['ZSYMAM'] = None
-
-    # File numbers, reaction designations, and number of records
-    data['section_list'] = []
-    for _ in range(NXC):
-        _, _, mf, mt, nc, mod = get_cont_record(file_obj, skip_c=True)
-        data['section_list'].append((mf, mt, nc, mod))
-
-    return data
-
-
-def parse_mf3(file_obj: TextIO) -> dict:
-    # Generate cross section
-    ZA, AWR, *_ = get_head_record(file_obj)
-    params, xs = get_tab1_record(file_obj)
-    return {
-        'ZA': ZA,
-        'AWR': AWR,
-        'QM': params[0],
-        'QI': params[1],
-        'LR': params[3],
-        'sigma': xs
-    }
-
-
-def parse_mf4(file_obj: TextIO) -> dict:
-    # Read first two records
-    ZA, AWR, LVT, LTT, _, _ = get_head_record(file_obj)
-    _, _, LI, LCT, NK, NM = get_cont_record(file_obj)
-
-    # initialize dictionary for angular distribution
-    data = {'ZA': ZA, 'AWR': AWR, 'LTT': LTT, 'LI': LI, 'LCT': LCT}
-
-    # Check for obsolete energy transformation matrix. If present, just skip
-    # it and keep reading
-    if LVT > 0:
-        warn('Obsolete energy transformation matrix in MF=4 angular distribution.')
-        for _ in range((NK + 5)//6):
-            file_obj.readline()
-
-    def legendre_data(file_obj):
-        data = {}
-        params, data['E_int'] = get_tab2_record(file_obj)
-        n_energy = params[5]
-
-        energy = np.zeros(n_energy)
-        a_l = []
-        for i in range(n_energy):
-            items, al = get_list_record(file_obj)
-            data['T'] = items[0]
-            energy[i] = items[1]
-            data['LT'] = items[2]
-            coefficients = np.array(al)
-            a_l.append(coefficients)
-        data['a_l'] = a_l
-        data['E'] = energy
-        return data
-
-    def tabulated_data(file_obj):
-        data = {}
-        params, data['E_int'] = get_tab2_record(file_obj)
-        n_energy = params[5]
-
-        energy = np.zeros(n_energy)
-        mu = []
-        for i in range(n_energy):
-            params, f = get_tab1_record(file_obj)
-            data['T'] = params[0]
-            energy[i] = params[1]
-            data['LT'] = params[2]
-            mu.append(f)
-        data['E'] = energy
-        data['mu'] = mu
-        return data
-
-    if LTT == 0 and LI == 1:
-        # Purely isotropic
-        pass
-
-    elif LTT == 1 and LI == 0:
-        # Legendre polynomial coefficients
-        data['legendre'] = legendre_data(file_obj)
-
-    elif LTT == 2 and LI == 0:
-        # Tabulated probability distribution
-        data['tabulated'] = tabulated_data(file_obj)
-
-    elif LTT == 3 and LI == 0:
-        # Legendre for low energies / tabulated for high energies
-        data['legendre'] = legendre_data(file_obj)
-        data['tabulated'] = tabulated_data(file_obj)
-
-    return data
 
 
 class Material:
