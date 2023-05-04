@@ -124,7 +124,17 @@ class ChargedParticleElasticScattering:
 
     @staticmethod
     def dict_from_endf(file_obj: TextIO) -> dict:
-        raise NotImplementedError
+        (SPI, _, LIDP, _, NR, NE), E_int = get_tab2_record(file_obj)
+        data = {'SPI': SPI, 'LIDP': LIDP, 'NE': NE, 'E_int': E_int}
+
+        # Read distribution data for each incident energy
+        data['distribution'] = []
+        for _ in range(NE):
+            (_, E, LTP, NW, NL), A = get_list_record(file_obj)
+            dist = {'E': E, 'LTP': LTP, 'NW': NW, 'NL': NL, 'A': A}
+            data['distribution'].append(dist)
+
+        return data
 
 
 class NBodyPhaseSpace:
@@ -143,4 +153,22 @@ class LaboratoryAngleEnergy:
 
     @staticmethod
     def dict_from_endf(file_obj: TextIO) -> dict:
-        raise NotImplementedError
+        # Read top-level TAB2 record
+        (*_, NR, NE), E_int = get_tab2_record(file_obj)
+        data = {'NE': NE, 'E_int': E_int}
+
+        data['distribution'] = []
+        for _ in range(NE):
+            # Read TAB2 record for the i-th incident energy
+            (_, E, _, _, NRM, NMU), mu_int = get_tab2_record(file_obj)
+            dist = {'E': E, 'NRM': NRM, 'NMU': NMU, 'mu_int': mu_int}
+
+            dist['mu'] = []
+            for _ in range(NMU):
+                # Read TAB1 record for the j-th outgoing cosine
+                (_, mu, *_), f = get_tab1_record(file_obj)
+                dist['mu'].append({'mu': mu, 'f': f})
+
+            data['distribution'].append(dist)
+
+        return data
