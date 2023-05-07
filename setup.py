@@ -1,10 +1,10 @@
 from setuptools import setup, find_packages
 
-from pybind11.setup_helpers import Pybind11Extension, build_ext
+from pybind11.setup_helpers import build_ext, intree_extensions
 
 __version__ = "0.1.0"
 
-ext_modules = [Pybind11Extension('endfpy._records', ["src/endfpy/_records.cpp"])]
+ext_modules = intree_extensions(["src/endfpy/_records.cpp"])
 
 setup(
     name="endfpy",
