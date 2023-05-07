@@ -4,11 +4,12 @@ from typing import TextIO, Tuple
 import numpy as np
 
 from .function import Tabulated1D, Tabulated2D
+from ._records import float_endf
 
 ENDF_FLOAT_RE = re.compile(r'([\s\-\+]?\d*\.\d+)([\+\-]) ?(\d+)')
 
 
-def float_endf(s: str) -> float:
+def py_float_endf(s: str) -> float:
     """Convert string of floating point number in ENDF to float.
 
     The ENDF-6 format uses an 'e-less' floating point number format,
