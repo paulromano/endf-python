@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools>=42", "pybind11>=2.10.0"]
+requires = ["setuptools>=61", "pybind11>=2.10.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -45,3 +45,9 @@ docs = [
 [project.urls]
 "Bug Tracker" = "https://github.com/paulromano/endfpy/issues"
 "Source Code" = "https://github.com/paulromano/endfpy"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
