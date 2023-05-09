@@ -11,6 +11,7 @@ https://www.oecd-nea.org/dbdata/data/manual-endf/endf102.pdf.
 """
 import io
 from pathlib import PurePath
+from typing import List, Tuple
 
 from .data import gnds_name
 from .mf1 import parse_mf1_mt451, parse_mf1_mt452, parse_mf1_mt455, \
@@ -133,7 +134,9 @@ class Material:
     ----------
     MAT : int
         ENDF material number
-    section : dict
+    sections : list of tuple
+        List of (MF, MT) sections
+    section_text : dict
         Dictionary mapping (MF, MT) to corresponding section of the ENDF file.
     section_data : dict
         Dictionary mapping (MF, MT) to a dictionary representing the
@@ -147,7 +150,7 @@ class Material:
         else:
             fh = filename_or_obj
             need_to_close = False
-        self.section = {}
+        self.section_text = {}
 
         # Skip TPID record. Evaluators sometimes put in TPID records that are
         # ill-formated because they lack MF/MT values or put them in the wrong
@@ -189,13 +192,13 @@ class Material:
                 else:
                     section_text += line
             self.MAT = MAT
-            self.section[MF, MT] = section_text
+            self.section_text[MF, MT] = section_text
 
         if need_to_close:
             fh.close()
 
         self.section_data = {}
-        for (MF, MT), text in self.section.items():
+        for (MF, MT), text in self.section_text.items():
             file_obj = io.StringIO(text)
             if MF == 1 and MT == 451:
                 self.section_data[MF, MT] = parse_mf1_mt451(file_obj)
@@ -244,9 +247,12 @@ class Material:
         return '<{} for {} {}>'.format(_SUBLIBRARY[metadata['NSUB']], name,
                                        _LIBRARY[metadata['NLIB']])
 
-
     @property
     def gnds_name(self):
         return gnds_name(self.target['atomic_number'],
                          self.target['mass_number'],
                          self.target['isomeric_state'])
+
+    @property
+    def sections(self) -> List[Tuple[int, int]]:
+        return list(self.section_text.keys())
