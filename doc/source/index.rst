@@ -1,20 +1,36 @@
-.. endf documentation master file, created by
-   sphinx-quickstart on Mon May  8 23:24:32 2023.
-   You can adapt this file completely to your liking, but it should at least
-   contain the root `toctree` directive.
+:notoc:
 
-Welcome to endf's documentation!
-================================
+ENDF Python Interface
+=====================
+
+.. grid:: 3
+
+    .. grid-item-card:: \ :octicon:`book;2em` User's Guide
+        :text-align: center
+        :link: user/index
+        :link-type: doc
+
+        The user's guide contains instructions for installing and an overview of
+        the basic concepts.
+
+    .. grid-item-card:: \ :octicon:`terminal;2em` API Reference
+        :text-align: center
+        :link: reference/index
+        :link-type: doc
+
+        The reference guide provides detailed information on classes, methods,
+        arguments, return values, etc.
+
+    .. grid-item-card:: \ :octicon:`comment-discussion;2em` Getting Help
+        :text-align: center
+        :link: https://github.com/paulromano/endf/discussions
+
+        Have questions? Click here for our discussions forum.
 
 .. toctree::
-   :maxdepth: 2
-   :caption: Contents:
+    :maxdepth: 2
+    :caption: Contents:
+    :hidden:
 
-
-
-Indices and tables
-==================
-
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
+    user/index
+    reference/index
