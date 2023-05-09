@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2023 International Atomic Energy Agency
+# SPDX-License-Identifier: MIT
+
 from abc import ABC
 from typing import TextIO
 

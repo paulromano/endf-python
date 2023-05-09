@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2023 International Atomic Energy Agency
+# SPDX-License-Identifier: MIT
+
 import re
 
 # Dictionary to give element symbols from IUPAC names

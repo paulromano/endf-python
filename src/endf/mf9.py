@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2023 International Atomic Energy Agency
+# SPDX-License-Identifier: MIT
+
 from typing import TextIO
 
 from .records import get_head_record, get_tab1_record

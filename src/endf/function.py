@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2023 International Atomic Energy Agency
+# SPDX-License-Identifier: MIT
+
 from collections.abc import Iterable
 from math import exp, log
 
