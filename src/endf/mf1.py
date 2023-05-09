@@ -1,5 +1,7 @@
 from typing import TextIO
 
+import numpy as np
+
 from .records import get_head_record, get_cont_record, get_text_record, \
     get_list_record, get_tab1_record, get_tab2_record
 
@@ -188,5 +190,37 @@ def parse_mf1_mt458(file_obj: TextIO) -> dict:
             # Determine which component it is and replace in dictionary
             name = components[IFC]
             data[name] = {'LDRV': LDRV, 'EIFC': EIFC}
+
+    return data
+
+
+def parse_mf1_mt460(file_obj: TextIO) -> dict:
+    """Parse delayed photon data from MF=1, MT=460
+
+    Parameters
+    ----------
+    file_obj
+        File-like object to read from
+
+    Returns
+    -------
+    dict
+        Delayed photon data
+
+    """
+    ZA, AWR, LO, _, NG, _ = get_head_record(file_obj)
+    data = {'ZA': ZA, 'AWR': AWR, 'LO': LO}
+    if LO == 1:
+        data['NG'] = NG
+        # Read energy and time dependence for each photon
+        data['E'] = np.empty(NG)
+        data['T'] = []
+        for i in range(NG):
+            (E, *_), T = get_tab1_record(file_obj)
+            data['E'][i] = E
+            data['T'].append(T)
+    elif LO == 2:
+        # Read decay constants for precursors
+        _, data['lambda'] = get_list_record(file_obj)
 
     return data
