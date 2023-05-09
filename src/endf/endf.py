@@ -10,9 +10,9 @@ https://www.oecd-nea.org/dbdata/data/manual-endf/endf102.pdf.
 
 """
 import io
-from pathlib import PurePath, Path
 from typing import List, Tuple, Any, Union, TextIO
 
+import endf
 from .data import gnds_name
 from .fileutils import PathLike
 from .mf1 import parse_mf1_mt451, parse_mf1_mt452, parse_mf1_mt455, \
@@ -229,6 +229,21 @@ class Material:
     @property
     def sections(self) -> List[Tuple[int, int]]:
         return list(self.section_text.keys())
+
+    def interpret(self) -> Any:
+        """Get high-level interface class for the ENDF material
+
+        Returns
+        -------
+        Instance of a high-level interface class, e.g.,
+        :class:`endf.IncidentNeutron`.
+
+        """
+        NSUB = self.section_data[1, 451]['NSUB']
+        if NSUB == 10:
+            return endf.IncidentNeutron(self)
+        else:
+            raise NotImplementedError(f"No class implemented for {NSUB=}")
 
 
 def get_materials(filename: PathLike) -> List[Material]:

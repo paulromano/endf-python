@@ -2,3 +2,4 @@
 # SPDX-License-Identifier: MIT
 
 from .endf import *
+from .incident_neutron import *
