@@ -117,7 +117,7 @@ class Material:
 
     """
     def __init__(self, filename_or_obj: Union[PathLike, TextIO]):
-        if isinstance(filename_or_obj, PathLike):
+        if isinstance(filename_or_obj, PathLike.__args__):
             fh = open(str(filename_or_obj), 'r')
             need_to_close = True
         else:
