@@ -130,7 +130,7 @@ class ChargedParticleElasticScattering:
         # Read distribution data for each incident energy
         data['distribution'] = []
         for _ in range(NE):
-            (_, E, LTP, NW, NL), A = get_list_record(file_obj)
+            (_, E, LTP, _, NW, NL), A = get_list_record(file_obj)
             dist = {'E': E, 'LTP': LTP, 'NW': NW, 'NL': NL, 'A': A}
             data['distribution'].append(dist)
 
