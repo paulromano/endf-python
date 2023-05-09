@@ -3,7 +3,7 @@ requires = ["setuptools>=61", "pybind11>=2.10.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "endfpy"
+name = "endf"
 version = "0.1.0"
 authors = [
     { name = "Paul Romano", email = "paul.k.romano@gmail.com" },
@@ -43,8 +43,8 @@ docs = [
 ]
 
 [project.urls]
-"Bug Tracker" = "https://github.com/paulromano/endfpy/issues"
-"Source Code" = "https://github.com/paulromano/endfpy"
+"Bug Tracker" = "https://github.com/paulromano/endf/issues"
+"Source Code" = "https://github.com/paulromano/endf"
 
 [tool.setuptools]
 package-dir = {"" = "src"}
