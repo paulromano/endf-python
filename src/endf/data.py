@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: MIT
 
 import re
+from typing import Tuple
 
 # Dictionary to give element symbols from IUPAC names
 # (and some common mispellings)
@@ -79,7 +80,7 @@ EV_PER_MEV = 1.0e6
 _GNDS_NAME_RE = re.compile(r'([A-Zn][a-z]*)(\d+)((?:_[em]\d+)?)')
 
 
-def gnds_name(Z, A, m=0):
+def gnds_name(Z: int, A: int, m: int = 0) -> str:
     """Return nuclide name using GNDS convention
 
     .. versionchanged:: 0.14.0
@@ -87,17 +88,16 @@ def gnds_name(Z, A, m=0):
 
     Parameters
     ----------
-    Z : int
+    Z
         Atomic number
-    A : int
+    A
         Mass number
-    m : int, optional
+    m
         Metastable state
 
     Returns
     -------
-    str
-        Nuclide name in GNDS convention, e.g., 'Am242_m1'
+    Nuclide name in GNDS convention, e.g., 'Am242_m1'
 
     """
     if m > 0:
@@ -105,18 +105,17 @@ def gnds_name(Z, A, m=0):
     return f'{ATOMIC_SYMBOL[Z]}{A}'
 
 
-def zam(name):
+def zam(name: str) -> Tuple[int, int, int]:
     """Return tuple of (atomic number, mass number, metastable state)
 
     Parameters
     ----------
-    name : str
+    name
         Name of nuclide using GNDS convention, e.g., 'Am242_m1'
 
     Returns
     -------
-    3-tuple of int
-        Atomic number, mass number, and metastable state
+    Atomic number, mass number, and metastable state
 
     """
     try:

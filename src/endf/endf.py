@@ -10,10 +10,11 @@ https://www.oecd-nea.org/dbdata/data/manual-endf/endf102.pdf.
 
 """
 import io
-from pathlib import PurePath
-from typing import List, Tuple
+from pathlib import PurePath, Path
+from typing import List, Tuple, Any, Union, TextIO
 
 from .data import gnds_name
+from .fileutils import PathLike
 from .mf1 import parse_mf1_mt451, parse_mf1_mt452, parse_mf1_mt455, \
     parse_mf1_mt458, parse_mf1_mt460
 from .mf2 import parse_mf2
@@ -93,40 +94,12 @@ SUM_RULES = {
 }
 
 
-def get_materials(filename):
-    """Return a list of all materials within an ENDF file.
-
-    Parameters
-    ----------
-    filename : str
-        Path to ENDF-6 formatted file
-
-    Returns
-    -------
-    list
-        A list of :class:`Material` instances.
-
-    """
-    materials = []
-    with open(str(filename), 'r') as fh:
-        while True:
-            pos = fh.tell()
-            line = fh.readline()
-            if line[66:70] == '  -1':
-                break
-            fh.seek(pos)
-            materials.append(Material(fh))
-    return materials
-
-
-
-
 class Material:
     """ENDF material with multiple files/sections
 
     Parameters
     ----------
-    filename_or_obj : str or file-like
+    filename
         Path to ENDF file to read or an open file positioned at the start of an
         ENDF material
 
@@ -143,8 +116,8 @@ class Material:
         corresponding section of the ENDF file.
 
     """
-    def __init__(self, filename_or_obj):
-        if isinstance(filename_or_obj, (str, PurePath)):
+    def __init__(self, filename_or_obj: Union[PathLike, TextIO]):
+        if isinstance(filename_or_obj, PathLike):
             fh = open(str(filename_or_obj), 'r')
             need_to_close = True
         else:
@@ -241,14 +214,14 @@ class Material:
             else:
                 pass
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         metadata = self.section_data[1, 451]
         name = metadata['ZSYMAM'].replace(' ', '')
         return '<{} for {} {}>'.format(_SUBLIBRARY[metadata['NSUB']], name,
                                        _LIBRARY[metadata['NLIB']])
 
     @property
-    def gnds_name(self):
+    def gnds_name(self) -> str:
         return gnds_name(self.target['atomic_number'],
                          self.target['mass_number'],
                          self.target['isomeric_state'])
@@ -256,3 +229,28 @@ class Material:
     @property
     def sections(self) -> List[Tuple[int, int]]:
         return list(self.section_text.keys())
+
+
+def get_materials(filename: PathLike) -> List[Material]:
+    """Return a list of all materials within an ENDF file.
+
+    Parameters
+    ----------
+    filename
+        Path to ENDF-6 formatted file
+
+    Returns
+    -------
+    A list of :class:`Material` instances.
+
+    """
+    materials = []
+    with open(str(filename), 'r') as fh:
+        while True:
+            pos = fh.tell()
+            line = fh.readline()
+            if line[66:70] == '  -1':
+                break
+            fh.seek(pos)
+            materials.append(Material(fh))
+    return materials

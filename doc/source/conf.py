@@ -42,3 +42,5 @@ html_theme_options = {
     #"navbar_end": ["navbar-icon-links"],
     "show_toc_level": 3,
 }
+
+napoleon_use_rtype = False
