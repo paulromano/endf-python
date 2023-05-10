@@ -3,10 +3,10 @@
 
 """Module for parsing and manipulating data from ENDF files.
 
-All the classes and functions in this module are based on document
-ENDF-102 titled "Data Formats and Procedures for the Evaluated Nuclear
-Data File ENDF-6". The version from July 2010 can be found at
-https://www.oecd-nea.org/dbdata/data/manual-endf/endf102.pdf.
+All the classes and functions in this module are based on the ENDF-102 report
+titled "ENDF-6 Formats Manual: Data Formats and Procedures for the Evaluated
+Nuclear Data Files". The version from January 2018 can be found at
+https://doi.org/10.2172/1425114.
 
 """
 import io
