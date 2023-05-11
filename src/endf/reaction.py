@@ -1,7 +1,19 @@
 # SPDX-FileCopyrightText: 2023 International Atomic Energy Agency
 # SPDX-License-Identifier: MIT
 
+from copy import deepcopy
+from typing import List, Tuple
+
+import numpy as np
+from numpy.polynomial import Polynomial
+
+from .data import gnds_name
 from .endf import Material
+from .function import Tabulated1D
+from .mf4 import AngleDistribution
+from .mf5 import EnergyDistribution, LevelInelastic
+from .mf6 import UncorrelatedAngleEnergy
+from .product import Product
 
 
 REACTION_NAME = {
@@ -48,6 +60,180 @@ REACTION_NAME.update({i: f'(n,2n{i - 875})' for i in range(875, 891)})
 REACTION_MT = {name: mt for mt, name in REACTION_NAME.items()}
 REACTION_MT['fission'] = 18
 
+FISSION_MTS = (18, 19, 20, 21, 38)
+
+
+def _get_products(material: Material, MT: int) -> List[Product]:
+    """Generate products from MF=6 in an ENDF evaluation
+
+    Parameters
+    ----------
+    material
+        ENDF evaluation to read from
+    MT
+        The MT value of the reaction to get products for
+
+    Returns
+    -------
+    Products of the reaction
+
+    """
+    product_data = material.section_data[6, MT]
+    products = []
+    for data in product_data['products']:
+        # Determine name of particle
+        ZA = data['ZAP']
+        if ZA == 0:
+            name = 'photon'
+        elif ZA == 1:
+            name = 'neutron'
+        elif ZA == 1000:
+            name = 'electron'
+        else:
+            Z, A = divmod(ZA, 1000)
+            name = gnds_name(Z, A)
+
+        y_i = data['y_i']
+
+        # TODO: Read distributions
+        LAW = data['LAW']
+
+        products.append(Product(name, y_i))
+
+    return products
+
+
+def _get_fission_products_endf(material: Material, MT: int) -> Tuple[List[Product], List[Product]]:
+    """Generate fission products from an ENDF evaluation
+
+    Parameters
+    ----------
+    ev : openmc.data.endf.Evaluation
+
+    Returns
+    -------
+    products : list of openmc.data.Product
+        Prompt and delayed fission neutrons
+    derived_products : list of openmc.data.Product
+        "Total" fission neutron
+
+    """
+    products = []
+    derived_products = []
+
+    if (1, 456) in material:
+        # Prompt nu values
+        data = material.section_data[1, 456]
+        LNU = data['LNU']
+        if LNU == 1:
+            # Polynomial representation
+            yield_ = Polynomial(data['C'])
+        elif LNU == 2:
+            # Tabulated representation
+            yield_ = data['nu']
+
+        prompt_neutron = Product('neutron', yield_=yield_)
+        products.append(prompt_neutron)
+
+    if (1, 452) in material:
+        # Total nu values
+        data = material.section_data[1, 452]
+        if data['LNU'] == 1:
+            # Polynomial representation
+            yield_ = Polynomial(data['C'])
+        elif data['LNU'] == 2:
+            # Tabulated representation
+            yield_ = data['nu']
+
+        total_neutron = Product('neutron', yield_=yield_)
+        total_neutron.emission_mode = 'total'
+
+        if (1, 456) in material:
+            derived_products.append(total_neutron)
+        else:
+            products.append(total_neutron)
+
+    if (1, 455) in material:
+        data = material.section_data[1, 455]
+        if data['LDG'] == 0:
+            # Delayed-group constants energy independent
+            decay_constants = data['lambda']
+            for constant in data['lambda']:
+                delayed_neutron = Product('neutron')
+                delayed_neutron.emission_mode = 'delayed'
+                delayed_neutron.decay_rate = constant
+                products.append(delayed_neutron)
+        elif data['LDG'] == 1:
+            # Delayed-group constants energy dependent
+            raise NotImplementedError('Delayed neutron with energy-dependent '
+                                      'group constants.')
+
+        # In MF=1, MT=455, the delayed-group abundances are actually not
+        # specified if the group constants are energy-independent. In this case,
+        # the abundances must be inferred from MF=5, MT=455 where multiple
+        # energy distributions are given.
+        if data['LNU'] == 1:
+            # Nu represented as polynomial
+            for neutron in products[-6:]:
+                neutron.yield_ = Polynomial(data['C'])
+        elif data['LNU'] == 2:
+            # Nu represented by tabulation
+            for neutron in products[-6:]:
+                neutron.yield_ = deepcopy(data['nu'])
+
+        if (5, 455) in material:
+            mf5_data = material.section_data[5, 455]
+            NK = mf5_data['NK']
+            if NK > 1 and len(decay_constants) == 1:
+                # If only one precursor group is listed in MF=1, MT=455, use the
+                # energy spectra from MF=5 to split them into different groups
+                for _ in range(NK - 1):
+                    products.append(deepcopy(products[1]))
+            elif NK != len(decay_constants):
+                raise ValueError(
+                    'Number of delayed neutron fission spectra ({}) does not '
+                    'match number of delayed neutron precursors ({}).'.format(
+                        NK, len(decay_constants)))
+            for i, subsection in enumerate(mf5_data['subsections']):
+                dist = UncorrelatedAngleEnergy()
+                dist.energy = EnergyDistribution.from_dict(subsection)
+
+                delayed_neutron = products[1 + i]
+                yield_ = delayed_neutron.yield_
+
+                # Here we handle the fact that the delayed neutron yield is the
+                # product of the total delayed neutron yield and the
+                # "applicability" of the energy distribution law in file 5.
+                applicability = subsection['p']
+                if isinstance(yield_, Tabulated1D):
+                    if np.all(applicability.y == applicability.y[0]):
+                        yield_.y *= applicability.y[0]
+                    else:
+                        # Get union energy grid and ensure energies are within
+                        # interpolable range of both functions
+                        max_energy = min(yield_.x[-1], applicability.x[-1])
+                        energy = np.union1d(yield_.x, applicability.x)
+                        energy = energy[energy <= max_energy]
+
+                        # Calculate group yield
+                        group_yield = yield_(energy) * applicability(energy)
+                        delayed_neutron.yield_ = Tabulated1D(energy, group_yield)
+                elif isinstance(yield_, Polynomial):
+                    if len(yield_) == 1:
+                        delayed_neutron.yield_ = deepcopy(applicability)
+                        delayed_neutron.yield_.y *= yield_.coef[0]
+                    else:
+                        if np.all(applicability.y == applicability.y[0]):
+                            yield_.coef[0] *= applicability.y[0]
+                        else:
+                            raise NotImplementedError(
+                                'Total delayed neutron yield and delayed group '
+                                'probability are both energy-dependent.')
+
+                delayed_neutron.distribution.append(dist)
+
+    return products, derived_products
+
 
 class Reaction:
     """A nuclear reaction
@@ -75,6 +261,8 @@ class Reaction:
         Microscopic cross section for this reaction as a function of incident
         energy; these cross sections are provided in a dictionary where the key
         is the temperature of the cross section set.
+    products : list
+        Reaction products
 
     """
 
@@ -88,8 +276,72 @@ class Reaction:
         # TODO: Do something with breakup reaction flag
         self.xs = {'0K': rx['sigma']}
 
+        # Get fission product yields (nu) as well as delayed neutron energy
+        # distributions
+        self.products = []
+        if MT in FISSION_MTS:
+            self.products, self.derived_products = _get_fission_products_endf(material, MT)
+
+        if (6, MT) in material:
+            # Product angle-energy distribution
+            for product in _get_products(material, MT):
+                # If fission neutrons were already added from MF=1 data, copy
+                # the distribution to the existing products. Otherwise, add the
+                # product to the reaction.
+                if MT in FISSION_MTS and product.name == 'neutron':
+                    self.products[0].applicability = product.applicability
+                    self.products[0].distribution = product.distribution
+                else:
+                    self.products.append(product)
+
+        elif (4, MT) in material or (5, MT) in material:
+            # Uncorrelated angle-energy distribution
+            neutron = Product('neutron')
+
+            # Note that the energy distribution for MT=455 is read in
+            # _get_fission_products_endf rather than here
+            if (5, MT) in material:
+                data = material.section_data[5, MT]
+                for subsection in data['subsections']:
+                    dist = UncorrelatedAngleEnergy()
+                    dist.energy = EnergyDistribution.from_dict(subsection)
+
+                    neutron.applicability.append(subsection['p'])
+                    neutron.distribution.append(dist)
+            elif MT == 2:
+                # Elastic scattering -- no energy distribution is given since it
+                # can be calulcated analytically
+                dist = UncorrelatedAngleEnergy()
+                neutron.distribution.append(dist)
+            elif MT >= 51 and MT < 91:
+                # Level inelastic scattering -- no energy distribution is given
+                # since it can be calculated analytically. Here we determine the
+                # necessary parameters to create a LevelInelastic object
+                dist = UncorrelatedAngleEnergy()
+
+                A = material.section_data[1, 451]['AWR']
+                threshold = (A + 1.)/A*abs(self.q_reaction)
+                mass_ratio = (A/(A + 1.))**2
+                dist.energy = LevelInelastic(threshold, mass_ratio)
+
+                neutron.distribution.append(dist)
+
+            if (4, MT) in material:
+                data = material.section_data[4, MT]
+                for dist in neutron.distribution:
+                    dist.angle = AngleDistribution.from_dict(data)
+
+            if MT in FISSION_MTS and (5, MT) in material:
+                # For fission reactions,
+                self.products[0].applicability = neutron.applicability
+                self.products[0].distribution = neutron.distribution
+            else:
+                self.products.append(neutron)
+
+
     def __repr__(self):
-        if self.MT in REACTION_NAME:
-            return "<Reaction: MT={} {}>".format(self.MT, REACTION_NAME[self.MT])
+        name = REACTION_NAME.get(self.MT)
+        if name is not None:
+            return f"<Reaction: MT={self.MT} {name}>"
         else:
-            return "<Reaction: MT={}>".format(self.MT)
+            return f"<Reaction: MT={self.MT}>"
