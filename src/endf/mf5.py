@@ -22,15 +22,15 @@ def parse_mf5(file_obj: TextIO) -> dict:
         if LF == 1:
             dist = ArbitraryTabulated.dict_from_endf(file_obj, params)
         elif LF == 5:
-            return GeneralEvaporation.dict_from_endf(file_obj, params)
+            dist = GeneralEvaporation.dict_from_endf(file_obj, params)
         elif LF == 7:
-            return MaxwellEnergy.dict_from_endf(file_obj, params)
+            dist = MaxwellEnergy.dict_from_endf(file_obj, params)
         elif LF == 9:
-            return Evaporation.dict_from_endf(file_obj, params)
+            dist = Evaporation.dict_from_endf(file_obj, params)
         elif LF == 11:
-            return WattEnergy.dict_from_endf(file_obj, params)
+            dist = WattEnergy.dict_from_endf(file_obj, params)
         elif LF == 12:
-            return MadlandNix.dict_from_endf(file_obj, params)
+            dist = MadlandNix.dict_from_endf(file_obj, params)
 
         subsection['distribution'] = dist
         data['subsections'].append(subsection)
@@ -60,8 +60,7 @@ class EnergyDistribution(ABC):
 
         Returns
         -------
-        openmc.data.EnergyDistribution
-            A sub-class of :class:`openmc.data.EnergyDistribution`
+        A sub-class of :class:`EnergyDistribution`
 
         """
         LF = params[3]
@@ -77,6 +76,23 @@ class EnergyDistribution(ABC):
             return WattEnergy.from_endf(file_obj, params)
         elif LF == 12:
             return MadlandNix.from_endf(file_obj, params)
+
+    @staticmethod
+    def from_dict(subsection: dict):
+        LF = subsection['LF']
+        data = subsection['distribution']
+        if LF == 1:
+            return ArbitraryTabulated.from_dict(data)
+        elif LF == 5:
+            return GeneralEvaporation.from_dict(data)
+        elif LF == 7:
+            return MaxwellEnergy.from_dict(data)
+        elif LF == 9:
+            return Evaporation.from_dict(data)
+        elif LF == 11:
+            return WattEnergy.from_dict(data)
+        elif LF == 12:
+            return MadlandNix.from_dict(data)
 
 
 class ArbitraryTabulated(EnergyDistribution):
@@ -140,6 +156,11 @@ class ArbitraryTabulated(EnergyDistribution):
     def from_endf(cls, file_obj: TextIO, params: list):
         data = cls.dict_from_endf(file_obj, params)
         return cls(data['E'], data['g'])
+
+    @classmethod
+    def from_dict(cls, data: dict):
+        return cls(data['E'], data['g'])
+
 
 
 class GeneralEvaporation(EnergyDistribution):
@@ -205,6 +226,10 @@ class GeneralEvaporation(EnergyDistribution):
         data = cls.dict_from_endf(file_obj, params)
         return cls(data['theta'], data['g'], data['U'])
 
+    @classmethod
+    def from_dict(cls, data: dict):
+        return cls(data['theta'], data['g'], data['U'])
+
 
 class MaxwellEnergy(EnergyDistribution):
     r"""Simple Maxwellian fission spectrum represented as
@@ -259,8 +284,7 @@ class MaxwellEnergy(EnergyDistribution):
         return {'U': params[0], 'theta': theta}
 
     @classmethod
-    def from_endf(cls, file_obj: TextIO, params: list):
-        data = cls.dict_from_endf(file_obj, params)
+    def from_dict(cls, data: dict):
         return cls(data['theta'], data['U'])
 
 
@@ -321,6 +345,10 @@ class Evaporation(EnergyDistribution):
         data = cls.dict_from_endf(file_obj, params)
         return cls(data['theta'], data['U'])
 
+    @classmethod
+    def from_dict(cls, data: dict):
+        return cls(data['theta'], data['U'])
+
 
 class WattEnergy(EnergyDistribution):
     r"""Energy-dependent Watt spectrum represented as
@@ -379,6 +407,14 @@ class WattEnergy(EnergyDistribution):
         _, b = get_tab1_record(file_obj)
         return {'U': params[0], 'a': a, 'b': b}
 
+    @classmethod
+    def from_endf(cls, file_obj: TextIO, params: list):
+        data = cls.dict_from_endf(file_obj, params)
+        return cls(data['a'], data['b'], data['U'])
+
+    @classmethod
+    def from_dict(cls, data: dict):
+        return cls(data['a'], data['b'], data['U'])
 
 class MadlandNix(EnergyDistribution):
     r"""Energy-dependent fission neutron spectrum (Madland and Nix) given in
@@ -447,3 +483,31 @@ class MadlandNix(EnergyDistribution):
     def from_endf(cls, file_obj: TextIO, params: list):
         data = cls.dict_from_endf(file_obj, params)
         return cls(data['EFL'], data['EFH'], data['T_M'])
+
+    @classmethod
+    def from_dict(cls, data: dict):
+        return cls(data['EFL'], data['EFH'], data['T_M'])
+
+
+class LevelInelastic:
+    r"""Level inelastic scattering
+
+    Parameters
+    ----------
+    threshold : float
+        Energy threshold in the laboratory system, :math:`(A + 1)/A * |Q|`
+    mass_ratio : float
+        :math:`(A/(A + 1))^2`
+
+    Attributes
+    ----------
+    threshold : float
+        Energy threshold in the laboratory system, :math:`(A + 1)/A * |Q|`
+    mass_ratio : float
+        :math:`(A/(A + 1))^2`
+
+    """
+
+    def __init__(self, threshold, mass_ratio):
+        self.threshold = threshold
+        self.mass_ratio = mass_ratio
