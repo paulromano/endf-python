@@ -172,21 +172,15 @@ def get_table(filename: PathLike, name: str = None):
 
     Returns
     -------
-    openmc.data.ace.Table
+    endf.ace.Table
         ACE table with specified name. If no name is specified, the first table
         in the file is returned.
 
     """
-
-    if name is None:
-        return Library(filename).tables[0]
-    else:
-        lib = Library(filename, name)
-        if lib.tables:
-            return lib.tables[0]
-        else:
-            raise ValueError('Could not find ACE table with name: {}'
-                             .format(name))
+    tables = get_tables(filename, name)
+    if name is not None and not tables:
+        raise ValueError(f'Could not find ACE table with name: {name}')
+    return tables[0]
 
 
 # The beginning of an ASCII ACE file consists of 12 lines that include the name,
@@ -194,9 +188,8 @@ def get_table(filename: PathLike, name: str = None):
 _ACE_HEADER_SIZE = 12
 
 
-class Library:
-    """A Library objects represents an ACE-formatted file which may contain
-    multiple tables with data.
+def get_tables(filename, table_names=None, verbose=False):
+    """Get all tables from an ACE-formatted file.
 
     Parameters
     ----------
@@ -215,213 +208,213 @@ class Library:
         List of :class:`Table` instances
 
     """
+    if isinstance(table_names, str):
+        table_names = [table_names]
+    if table_names is not None:
+        table_names = set(table_names)
 
-    def __init__(self, filename, table_names=None, verbose=False):
-        if isinstance(table_names, str):
-            table_names = [table_names]
-        if table_names is not None:
-            table_names = set(table_names)
+    tables = []
 
-        self.tables = []
+    # Determine whether file is ASCII or binary
+    filename = str(filename)
+    try:
+        fh = open(filename, 'rb')
+        # Grab 10 lines of the library
+        sb = b''.join([fh.readline() for i in range(10)])
 
-        # Determine whether file is ASCII or binary
-        filename = str(filename)
-        try:
-            fh = open(filename, 'rb')
-            # Grab 10 lines of the library
-            sb = b''.join([fh.readline() for i in range(10)])
+        # Try to decode it with ascii
+        sb.decode('ascii')
 
-            # Try to decode it with ascii
-            sb.decode('ascii')
+        # No exception so proceed with ASCII - reopen in non-binary
+        fh.close()
+        with open(filename, 'r') as fh:
+            return _read_ascii(fh, table_names, verbose)
+    except UnicodeDecodeError:
+        fh.close()
+        with open(filename, 'rb') as fh:
+            return _read_binary(fh, table_names, verbose)
 
-            # No exception so proceed with ASCII - reopen in non-binary
-            fh.close()
-            with open(filename, 'r') as fh:
-                self._read_ascii(fh, table_names, verbose)
-        except UnicodeDecodeError:
-            fh.close()
-            with open(filename, 'rb') as fh:
-                self._read_binary(fh, table_names, verbose)
 
-    def _read_binary(self, ace_file, table_names, verbose=False,
-                     recl_length=4096, entries=512):
-        """Read a binary (Type 2) ACE table.
+def _read_binary(ace_file, table_names, verbose=False, recl_length=4096, entries=512):
+    """Read a binary (Type 2) ACE table.
 
-        Parameters
-        ----------
-        ace_file : file
-            Open ACE file
-        table_names : None, str, or iterable
-            Tables from the file to read in.  If None, reads in all of the
-            tables. If str, reads in only the single table of a matching name.
-        verbose : str, optional
-            Whether to display what tables are being read. Defaults to False.
-        recl_length : int, optional
-            Fortran record length in binary file. Default value is 4096 bytes.
-        entries : int, optional
-            Number of entries per record. The default is 512 corresponding to a
-            record length of 4096 bytes with double precision data.
+    Parameters
+    ----------
+    ace_file : file
+        Open ACE file
+    table_names : None, str, or iterable
+        Tables from the file to read in.  If None, reads in all of the
+        tables. If str, reads in only the single table of a matching name.
+    verbose : str, optional
+        Whether to display what tables are being read. Defaults to False.
+    recl_length : int, optional
+        Fortran record length in binary file. Default value is 4096 bytes.
+    entries : int, optional
+        Number of entries per record. The default is 512 corresponding to a
+        record length of 4096 bytes with double precision data.
 
-        """
+    """
+    tables = []
+    while True:
+        start_position = ace_file.tell()
 
-        while True:
-            start_position = ace_file.tell()
+        # Check for end-of-file
+        if len(ace_file.read(1)) == 0:
+            return tables
+        ace_file.seek(start_position)
 
-            # Check for end-of-file
-            if len(ace_file.read(1)) == 0:
-                return
-            ace_file.seek(start_position)
+        # Read name, atomic mass ratio, temperature, date, comment, and
+        # material
+        name, atomic_weight_ratio, temperature, date, comment, mat = \
+            struct.unpack('=10sdd10s70s10s', ace_file.read(116))
+        name = name.decode().strip()
 
-            # Read name, atomic mass ratio, temperature, date, comment, and
-            # material
-            name, atomic_weight_ratio, temperature, date, comment, mat = \
-                struct.unpack(str('=10sdd10s70s10s'), ace_file.read(116))
-            name = name.decode().strip()
+        # Read ZAID/awr combinations
+        data = struct.unpack('=' + 16*'id', ace_file.read(192))
+        pairs = list(zip(data[::2], data[1::2]))
 
-            # Read ZAID/awr combinations
-            data = struct.unpack(str('=' + 16*'id'), ace_file.read(192))
-            pairs = list(zip(data[::2], data[1::2]))
+        # Read NXS
+        nxs = list(struct.unpack('=16i', ace_file.read(64)))
 
-            # Read NXS
-            nxs = list(struct.unpack(str('=16i'), ace_file.read(64)))
+        # Determine length of XSS and number of records
+        length = nxs[0]
+        n_records = (length + entries - 1)//entries
 
-            # Determine length of XSS and number of records
-            length = nxs[0]
-            n_records = (length + entries - 1)//entries
-
-            # verify that we are supposed to read this table in
-            if (table_names is not None) and (name not in table_names):
-                ace_file.seek(start_position + recl_length*(n_records + 1))
-                continue
-
-            if verbose:
-                kelvin = round(temperature * EV_PER_MEV / K_BOLTZMANN)
-                print("Loading nuclide {} at {} K".format(name, kelvin))
-
-            # Read JXS
-            jxs = list(struct.unpack(str('=32i'), ace_file.read(128)))
-
-            # Read XSS
-            ace_file.seek(start_position + recl_length)
-            xss = list(struct.unpack(str('={}d'.format(length)),
-                                     ace_file.read(length*8)))
-
-            # Insert zeros at beginning of NXS, JXS, and XSS arrays so that the
-            # indexing will be the same as Fortran. This makes it easier to
-            # follow the ACE format specification.
-            nxs.insert(0, 0)
-            nxs = np.array(nxs, dtype=int)
-
-            jxs.insert(0, 0)
-            jxs = np.array(jxs, dtype=int)
-
-            xss.insert(0, 0.0)
-            xss = np.array(xss)
-
-            # Create ACE table with data read in
-            table = Table(name, atomic_weight_ratio, temperature, pairs,
-                          nxs, jxs, xss)
-            self.tables.append(table)
-
-            # Advance to next record
+        # verify that we are supposed to read this table in
+        if (table_names is not None) and (name not in table_names):
             ace_file.seek(start_position + recl_length*(n_records + 1))
+            continue
 
-    def _read_ascii(self, ace_file, table_names, verbose=False):
-        """Read an ASCII (Type 1) ACE table.
+        if verbose:
+            kelvin = round(temperature * EV_PER_MEV / K_BOLTZMANN)
+            print(f"Loading nuclide {name} at {kelvin} K")
 
-        Parameters
-        ----------
-        ace_file : file
-            Open ACE file
-        table_names : None, str, or iterable
-            Tables from the file to read in.  If None, reads in all of the
-            tables. If str, reads in only the single table of a matching name.
-        verbose : str, optional
-            Whether to display what tables are being read. Defaults to False.
+        # Read JXS
+        jxs = list(struct.unpack('=32i', ace_file.read(128)))
 
-        """
+        # Read XSS
+        ace_file.seek(start_position + recl_length)
+        xss = list(struct.unpack(f'={length}d', ace_file.read(length*8)))
 
-        tables_seen = set()
+        # Insert zeros at beginning of NXS, JXS, and XSS arrays so that the
+        # indexing will be the same as Fortran. This makes it easier to
+        # follow the ACE format specification.
+        nxs.insert(0, 0)
+        nxs = np.array(nxs, dtype=int)
 
+        jxs.insert(0, 0)
+        jxs = np.array(jxs, dtype=int)
+
+        xss.insert(0, 0.0)
+        xss = np.array(xss)
+
+        # Create ACE table with data read in
+        table = Table(name, atomic_weight_ratio, temperature, pairs,
+                        nxs, jxs, xss)
+        tables.append(table)
+
+        # Advance to next record
+        ace_file.seek(start_position + recl_length*(n_records + 1))
+
+
+def _read_ascii(ace_file, table_names, verbose=False):
+    """Read an ASCII (Type 1) ACE table.
+
+    Parameters
+    ----------
+    ace_file : file
+        Open ACE file
+    table_names : None, str, or iterable
+        Tables from the file to read in.  If None, reads in all of the
+        tables. If str, reads in only the single table of a matching name.
+    verbose : str, optional
+        Whether to display what tables are being read. Defaults to False.
+
+    """
+    tables = []
+    tables_seen = set()
+
+    lines = [ace_file.readline() for i in range(_ACE_HEADER_SIZE + 1)]
+
+    while len(lines) != 0 and lines[0].strip() != '':
+        # Read name of table, atomic mass ratio, and temperature. If first
+        # line is empty, we are at end of file
+
+        # check if it's a 2.0 style header
+        if lines[0].split()[0][1] == '.':
+            words = lines[0].split()
+            name = words[1]
+            words = lines[1].split()
+            atomic_weight_ratio = float(words[0])
+            temperature = float(words[1])
+            commentlines = int(words[3])
+            for _ in range(commentlines):
+                lines.pop(0)
+                lines.append(ace_file.readline())
+        else:
+            words = lines[0].split()
+            name = words[0]
+            atomic_weight_ratio = float(words[1])
+            temperature = float(words[2])
+
+        datastr = ' '.join(lines[2:6]).split()
+        pairs = list(zip(map(int, datastr[::2]),
+                            map(float, datastr[1::2])))
+
+        datastr = '0 ' + ' '.join(lines[6:8])
+        nxs = np.fromstring(datastr, sep=' ', dtype=int)
+
+        # Detemrine number of lines in the XSS array; each line consists of
+        # four values
+        n_lines = (nxs[1] + 3)//4
+
+        # Ensure that we have more tables to read in
+        if (table_names is not None) and (table_names <= tables_seen):
+            break
+        tables_seen.add(name)
+
+        # verify that we are supposed to read this table in
+        if (table_names is not None) and (name not in table_names):
+            for _ in range(n_lines - 1):
+                ace_file.readline()
+            lines = [ace_file.readline() for i in range(_ACE_HEADER_SIZE + 1)]
+            continue
+
+        # Read lines corresponding to this table
+        lines += [ace_file.readline() for i in range(n_lines - 1)]
+
+        if verbose:
+            kelvin = round(temperature * EV_PER_MEV / K_BOLTZMANN)
+            print("Loading nuclide {} at {} K".format(name, kelvin))
+
+        # Insert zeros at beginning of NXS, JXS, and XSS arrays so that the
+        # indexing will be the same as Fortran. This makes it easier to
+        # follow the ACE format specification.
+        datastr = '0 ' + ' '.join(lines[8:_ACE_HEADER_SIZE])
+        jxs = np.fromstring(datastr, dtype=int, sep=' ')
+
+        datastr = '0.0 ' + ''.join(lines[_ACE_HEADER_SIZE:_ACE_HEADER_SIZE + n_lines])
+        xss = np.fromstring(datastr, sep=' ')
+
+        # When NJOY writes an ACE file, any values less than 1e-100 actually
+        # get written without the 'e'. Thus, what we do here is check
+        # whether the xss array is of the right size (if a number like
+        # 1.0-120 is encountered, np.fromstring won't capture any numbers
+        # after it). If it's too short, then we apply the ENDF float regular
+        # expression. We don't do this by default because it's expensive!
+        if xss.size != nxs[1] + 1:
+            datastr = ENDF_FLOAT_RE.sub(r'\1e\2\3', datastr)
+            xss = np.fromstring(datastr, sep=' ')
+            assert xss.size == nxs[1] + 1
+
+        table = Table(name, atomic_weight_ratio, temperature, pairs,
+                        nxs, jxs, xss)
+        tables.append(table)
+
+        # Read all data blocks
         lines = [ace_file.readline() for i in range(_ACE_HEADER_SIZE + 1)]
 
-        while len(lines) != 0 and lines[0].strip() != '':
-            # Read name of table, atomic mass ratio, and temperature. If first
-            # line is empty, we are at end of file
-
-            # check if it's a 2.0 style header
-            if lines[0].split()[0][1] == '.':
-                words = lines[0].split()
-                name = words[1]
-                words = lines[1].split()
-                atomic_weight_ratio = float(words[0])
-                temperature = float(words[1])
-                commentlines = int(words[3])
-                for _ in range(commentlines):
-                    lines.pop(0)
-                    lines.append(ace_file.readline())
-            else:
-                words = lines[0].split()
-                name = words[0]
-                atomic_weight_ratio = float(words[1])
-                temperature = float(words[2])
-
-            datastr = ' '.join(lines[2:6]).split()
-            pairs = list(zip(map(int, datastr[::2]),
-                             map(float, datastr[1::2])))
-
-            datastr = '0 ' + ' '.join(lines[6:8])
-            nxs = np.fromstring(datastr, sep=' ', dtype=int)
-
-            # Detemrine number of lines in the XSS array; each line consists of
-            # four values
-            n_lines = (nxs[1] + 3)//4
-
-            # Ensure that we have more tables to read in
-            if (table_names is not None) and (table_names <= tables_seen):
-                break
-            tables_seen.add(name)
-
-            # verify that we are supposed to read this table in
-            if (table_names is not None) and (name not in table_names):
-                for _ in range(n_lines - 1):
-                    ace_file.readline()
-                lines = [ace_file.readline() for i in range(_ACE_HEADER_SIZE + 1)]
-                continue
-
-            # Read lines corresponding to this table
-            lines += [ace_file.readline() for i in range(n_lines - 1)]
-
-            if verbose:
-                kelvin = round(temperature * EV_PER_MEV / K_BOLTZMANN)
-                print("Loading nuclide {} at {} K".format(name, kelvin))
-
-            # Insert zeros at beginning of NXS, JXS, and XSS arrays so that the
-            # indexing will be the same as Fortran. This makes it easier to
-            # follow the ACE format specification.
-            datastr = '0 ' + ' '.join(lines[8:_ACE_HEADER_SIZE])
-            jxs = np.fromstring(datastr, dtype=int, sep=' ')
-
-            datastr = '0.0 ' + ''.join(lines[_ACE_HEADER_SIZE:_ACE_HEADER_SIZE + n_lines])
-            xss = np.fromstring(datastr, sep=' ')
-
-            # When NJOY writes an ACE file, any values less than 1e-100 actually
-            # get written without the 'e'. Thus, what we do here is check
-            # whether the xss array is of the right size (if a number like
-            # 1.0-120 is encountered, np.fromstring won't capture any numbers
-            # after it). If it's too short, then we apply the ENDF float regular
-            # expression. We don't do this by default because it's expensive!
-            if xss.size != nxs[1] + 1:
-                datastr = ENDF_FLOAT_RE.sub(r'\1e\2\3', datastr)
-                xss = np.fromstring(datastr, sep=' ')
-                assert xss.size == nxs[1] + 1
-
-            table = Table(name, atomic_weight_ratio, temperature, pairs,
-                          nxs, jxs, xss)
-            self.tables.append(table)
-
-            # Read all data blocks
-            lines = [ace_file.readline() for i in range(_ACE_HEADER_SIZE + 1)]
+    return tables
 
 
 class TableType(enum.Enum):
