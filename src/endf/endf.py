@@ -214,6 +214,9 @@ class Material:
             else:
                 pass
 
+    def __contains__(self, mf_mt: Tuple[int, int]) -> bool:
+        return mf_mt in self.section_data
+
     def __repr__(self) -> str:
         metadata = self.section_data[1, 451]
         name = metadata['ZSYMAM'].replace(' ', '')

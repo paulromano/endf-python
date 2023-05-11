@@ -9,6 +9,7 @@ import numpy as np
 from .records import get_head_record, get_cont_record, get_tab2_record, \
     get_tab1_record, get_list_record
 
+
 def parse_mf4(file_obj: TextIO) -> dict:
     # Read first two records
     ZA, AWR, LVT, LTT, _, _ = get_head_record(file_obj)

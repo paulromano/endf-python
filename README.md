@@ -9,9 +9,11 @@ Compared to other packages that provide functionality for working with ENDF and
 ACE files, this package has numerous advantages:
 
 - Easily installable through `pip`
+- Thoughtful API design targeting Python first
 - Offers both a low-level interface for working with the raw data in an ENDF
   file as well as a more intuitive high-level interface
 - Fast file-loading performance thanks to optimized read routines
+- Fully documented, tested, and type-hinted
 
 ## Installation
 
