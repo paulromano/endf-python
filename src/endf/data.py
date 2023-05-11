@@ -74,6 +74,9 @@ ATOMIC_SYMBOL = {
 }
 ATOMIC_NUMBER = {value: key for key, value in ATOMIC_SYMBOL.items()}
 
+# Boltzmann constant in [eV/K]
+K_BOLTZMANN = 8.617333262e-5
+
 EV_PER_MEV = 1.0e6
 
 # Regex for GNDS nuclide names (used in zam function)

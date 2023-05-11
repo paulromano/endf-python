@@ -17,7 +17,7 @@ ACE files, this package has numerous advantages:
 
 ## Installation
 
-The `endf` Python package can be install from the [Python Package
+The `endf` Python package can be installed from the [Python Package
 Index](https://pypi.org/project/endf/) using `pip`:
 
 ```sh
