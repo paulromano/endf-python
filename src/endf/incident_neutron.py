@@ -46,7 +46,7 @@ class IncidentNeutron:
             material = filename_or_mat
 
         # Determine atomic number, mass number, and metastable state
-        metadata = material.section_data[1, 451]
+        metadata = material[1, 451]
         Z, A = divmod(metadata['ZA'], 1000)
         self.atomic_number = Z
         self.mass_number = A

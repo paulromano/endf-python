@@ -78,7 +78,7 @@ def _get_products(material: Material, MT: int) -> List[Product]:
     Products of the reaction
 
     """
-    product_data = material.section_data[6, MT]
+    product_data = material[6, MT]
     products = []
     for data in product_data['products']:
         # Determine name of particle
@@ -123,7 +123,7 @@ def _get_fission_products_endf(material: Material, MT: int) -> Tuple[List[Produc
 
     if (1, 456) in material:
         # Prompt nu values
-        data = material.section_data[1, 456]
+        data = material[1, 456]
         LNU = data['LNU']
         if LNU == 1:
             # Polynomial representation
@@ -137,7 +137,7 @@ def _get_fission_products_endf(material: Material, MT: int) -> Tuple[List[Produc
 
     if (1, 452) in material:
         # Total nu values
-        data = material.section_data[1, 452]
+        data = material[1, 452]
         if data['LNU'] == 1:
             # Polynomial representation
             yield_ = Polynomial(data['C'])
@@ -154,7 +154,7 @@ def _get_fission_products_endf(material: Material, MT: int) -> Tuple[List[Produc
             products.append(total_neutron)
 
     if (1, 455) in material:
-        data = material.section_data[1, 455]
+        data = material[1, 455]
         if data['LDG'] == 0:
             # Delayed-group constants energy independent
             decay_constants = data['lambda']
@@ -182,7 +182,7 @@ def _get_fission_products_endf(material: Material, MT: int) -> Tuple[List[Produc
                 neutron.yield_ = deepcopy(data['nu'])
 
         if (5, 455) in material:
-            mf5_data = material.section_data[5, 455]
+            mf5_data = material[5, 455]
             NK = mf5_data['NK']
             if NK > 1 and len(decay_constants) == 1:
                 # If only one precursor group is listed in MF=1, MT=455, use the
@@ -270,7 +270,7 @@ class Reaction:
         self.MT = MT
 
         # Get reaction cross section and Q values from MF=3
-        rx = material.section_data[3, MT]
+        rx = material[3, MT]
         self.q_massdiff = rx['QM']
         self.q_reaction = rx['QI']
         # TODO: Do something with breakup reaction flag
@@ -301,7 +301,7 @@ class Reaction:
             # Note that the energy distribution for MT=455 is read in
             # _get_fission_products_endf rather than here
             if (5, MT) in material:
-                data = material.section_data[5, MT]
+                data = material[5, MT]
                 for subsection in data['subsections']:
                     dist = UncorrelatedAngleEnergy()
                     dist.energy = EnergyDistribution.from_dict(subsection)
@@ -319,7 +319,7 @@ class Reaction:
                 # necessary parameters to create a LevelInelastic object
                 dist = UncorrelatedAngleEnergy()
 
-                A = material.section_data[1, 451]['AWR']
+                A = material[1, 451]['AWR']
                 threshold = (A + 1.)/A*abs(self.q_reaction)
                 mass_ratio = (A/(A + 1.))**2
                 dist.energy = LevelInelastic(threshold, mass_ratio)
@@ -327,7 +327,7 @@ class Reaction:
                 neutron.distribution.append(dist)
 
             if (4, MT) in material:
-                data = material.section_data[4, MT]
+                data = material[4, MT]
                 for dist in neutron.distribution:
                     dist.angle = AngleDistribution.from_dict(data)
 

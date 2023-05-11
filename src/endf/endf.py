@@ -217,6 +217,12 @@ class Material:
     def __contains__(self, mf_mt: Tuple[int, int]) -> bool:
         return mf_mt in self.section_data
 
+    def __getitem__(self, mf_mt: Tuple[int, int]) -> dict:
+        return self.section_data[mf_mt]
+
+    def __setitem__(self, key: Tuple[int, int], value):
+        self.section_data[key] = value
+
     def __repr__(self) -> str:
         metadata = self.section_data[1, 451]
         name = metadata['ZSYMAM'].replace(' ', '')
