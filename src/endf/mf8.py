@@ -5,7 +5,43 @@ from typing import TextIO
 
 import numpy as np
 
-from .records import get_head_record, get_list_record, get_tab1_record
+from .records import get_head_record, get_list_record, get_tab1_record, get_cont_record
+
+
+def parse_mf8(file_obj: TextIO) -> dict:
+    """Parse radioactive nuclide production data from MF=8
+
+    Parameters
+    ----------
+    file_obj
+        File-like object to read from
+
+    Returns
+    -------
+    dict
+        Radioactive nuclide production data
+    """
+    ZA, AWR, LIS, LISO, NS, NO = get_head_record(file_obj)
+    data = {'ZA': ZA, 'AWR': AWR, 'LIS': LIS, 'LISO': LISO, 'NS': NS, 'NO': NO}
+
+    data['subsections'] = []
+    for _ in range(NS):
+        if NO == 0:
+            (ZAP, ELFS, LMF, LFS, _, _), values = get_list_record(file_obj)
+            ND = len(values) // 6
+            subsection = {'ZAP': ZAP, 'ELFS': ELFS, 'LMF': LMF, 'LFS': LFS, 'ND': ND}
+            subsection['HL'] = values[::6]
+            subsection['RTYP'] = values[1::6]
+            subsection['ZAN'] = values[2::6]
+            subsection['BR'] = values[3::6]
+            subsection['END'] = values[4::6]
+            subsection['CT'] = values[5::6]
+        elif NO == 1:
+            ZAP, ELFS, LMF, LFS, _, _ = get_cont_record(file_obj)
+            subsection = {'ZAP': ZAP, 'ELFS': ELFS, 'LMF': LMF, 'LFS': LFS}
+        data['subsections'].append(subsection)
+
+    return data
 
 
 def parse_mf8_mt454(file_obj: TextIO) -> dict:
