@@ -137,7 +137,7 @@ class Material:
             position = fh.tell()
             line = fh.readline()
             MF = int(line[70:72])
-        self.material = int(line[66:70])
+        self.MAT = int(line[66:70])
         fh.seek(position)
 
         while True:
@@ -164,7 +164,6 @@ class Material:
                     break
                 else:
                     section_text += line
-            self.MAT = MAT
             self.section_text[MF, MT] = section_text
 
         if need_to_close:
@@ -231,9 +230,10 @@ class Material:
 
     @property
     def gnds_name(self) -> str:
-        return gnds_name(self.target['atomic_number'],
-                         self.target['mass_number'],
-                         self.target['isomeric_state'])
+        metadata = self[1, 451]
+        Z, A = divmod(metadata['ZA'], 1000)
+        m = metadata['LISO']
+        return gnds_name(Z, A, m)
 
     @property
     def sections(self) -> List[Tuple[int, int]]:
