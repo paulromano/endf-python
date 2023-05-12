@@ -6,7 +6,7 @@ from typing import Union
 from .data import gnds_name, ATOMIC_SYMBOL
 from .endf import Material
 from .fileutils import PathLike
-from .reaction import Reaction
+from .reaction import Reaction, REACTION_MT
 
 
 class IncidentNeutron:
@@ -61,7 +61,17 @@ class IncidentNeutron:
     def __contains__(self, MT: int):
         return MT in self.reactions
 
-    def __getitem__(self, MT: int) -> Reaction:
+    def __getitem__(self, MT_or_name: int) -> Reaction:
+        if isinstance(MT_or_name, str):
+            if MT_or_name in REACTION_MT:
+                MT = REACTION_MT[MT_or_name]
+            elif f'({MT_or_name})' in REACTION_MT:
+                MT = REACTION_MT[f'({MT_or_name})']
+            else:
+                raise ValueError(f"No reaction with label {MT_or_name}")
+        else:
+            MT = MT_or_name
+
         if MT in self.reactions:
             return self.reactions[MT]
         else:
