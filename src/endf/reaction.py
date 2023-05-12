@@ -7,7 +7,7 @@ from typing import List, Tuple
 import numpy as np
 from numpy.polynomial import Polynomial
 
-from .data import gnds_name
+from .data import gnds_name, ATOMIC_SYMBOL
 from .endf import Material
 from .function import Tabulated1D
 from .mf4 import AngleDistribution
@@ -69,7 +69,7 @@ def _get_products(material: Material, MT: int) -> List[Product]:
     Parameters
     ----------
     material
-        ENDF evaluation to read from
+        ENDF material to read from
     MT
         The MT value of the reaction to get products for
 
@@ -235,6 +235,73 @@ def _get_fission_products_endf(material: Material, MT: int) -> Tuple[List[Produc
     return products, derived_products
 
 
+def _get_activation_products(material: Material, MT: int, xs: Tabulated1D) -> List[Product]:
+    """Generate activation products from an ENDF evaluation
+
+    Parameters
+    ----------
+    material
+        ENDF material to read from
+    MT
+        The MT value of the reaction to get products for
+    xs
+        Cross section for the reaction
+
+    Returns
+    -------
+    Activation products
+
+    """
+    # Determine if file 9/10 are present
+    data = material[8, MT]
+    present = {9: False, 10: False}
+    for subsection in data['subsections']:
+        if subsection['LMF'] == 9:
+            present[9] = True
+        elif subsection['LMF'] == 10:
+            present[10] = True
+
+    products = []
+
+    for MF in (9, 10):
+        if not present[MF]:
+            continue
+
+        data = material[MF, MT]
+        for level in data['levels']:
+            # Determine what the product is
+            Z, A = divmod(level['IZAP'], 1000)
+            excited_state = level['LFS']
+
+            # Get GNDS name for product
+            symbol = ATOMIC_SYMBOL[Z]
+            if excited_state > 0:
+                name = f'{symbol}{A}_e{excited_state}'
+            else:
+                name = f'{symbol}{A}'
+
+            if MF == 9:
+                yield_ = level['Y']
+            else:
+                # Re-interpolate production cross section and neutron cross
+                # section to union energy grid
+                production_xs = level['sigma']
+                energy = np.union1d(production_xs.x, xs.x)
+                prod_xs = production_xs(energy)
+                neutron_xs = xs(energy)
+                idx = np.where(neutron_xs > 0)
+
+                # Calculate yield as ratio
+                yield_ = np.zeros_like(energy)
+                yield_[idx] = prod_xs[idx] / neutron_xs[idx]
+                yield_ = Tabulated1D(energy, yield_)
+
+            p = Product(name, yield_)
+            products.append(p)
+
+    return products
+
+
 class Reaction:
     """A nuclear reaction
 
@@ -338,6 +405,16 @@ class Reaction:
             else:
                 self.products.append(neutron)
 
+        if (8, MT) in material:
+            for act_product in _get_activation_products(material, MT, rx['sigma']):
+                # Check if product already exists from MF=6 and if it does, just
+                # overwrite the existing yield.
+                for product in self.products:
+                    if act_product.name == product.name:
+                        product.yield_ = act_product.yield_
+                        break
+                else:
+                    self.products.append(act_product)
 
     def __repr__(self):
         name = REACTION_NAME.get(self.MT)
