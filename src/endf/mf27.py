@@ -6,8 +6,8 @@ from typing import TextIO
 from .records import get_head_record, get_tab1_record
 
 
-def parse_mf23(file_obj: TextIO) -> dict:
-    """Parse photon cross sections from MF=23
+def parse_mf27(file_obj: TextIO) -> dict:
+    """Parse atomic form factors / scattering functions from MF=27
 
     Parameters
     ----------
@@ -17,15 +17,9 @@ def parse_mf23(file_obj: TextIO) -> dict:
     Returns
     -------
     dict
-        Photon cross section data
+        Atomic form factor or scattering function data
 
     """
     ZA, AWR, *_ = get_head_record(file_obj)
-    params, xs = get_tab1_record(file_obj)
-    return {
-        'ZA': ZA,
-        'AWR': AWR,
-        'EPE': params[0],
-        'EFL': params[1],
-        'sigma': xs
-    }
+    params, H = get_tab1_record(file_obj)
+    return {'ZA': ZA, 'AWR': AWR, 'Z': params[1], 'H': H}

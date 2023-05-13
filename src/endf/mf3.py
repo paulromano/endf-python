@@ -7,7 +7,19 @@ from .records import get_head_record, get_tab1_record
 
 
 def parse_mf3(file_obj: TextIO) -> dict:
-    # Generate cross section
+    """Parse reaction cross sections from MF=3
+
+    Parameters
+    ----------
+    file_obj
+        File-like object to read from
+
+    Returns
+    -------
+    dict
+        Cross section data
+
+    """
     ZA, AWR, *_ = get_head_record(file_obj)
     params, xs = get_tab1_record(file_obj)
     return {
