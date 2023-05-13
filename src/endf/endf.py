@@ -29,6 +29,7 @@ from .mf12 import parse_mf12
 from .mf13 import parse_mf13
 from .mf14 import parse_mf14
 from .mf15 import parse_mf15
+from .mf23 import parse_mf23
 
 
 _LIBRARY = {
@@ -212,6 +213,8 @@ class Material:
                 self.section_data[MF, MT] = parse_mf14(file_obj)
             elif MF == 15:
                 self.section_data[MF, MT] = parse_mf15(file_obj)
+            elif MF == 23:
+                self.section_data[MF, MT] = parse_mf23(file_obj)
             else:
                 pass
 
