@@ -32,6 +32,7 @@ from .mf15 import parse_mf15
 from .mf23 import parse_mf23
 from .mf26 import parse_mf26
 from .mf27 import parse_mf27
+from .mf28 import parse_mf28
 
 
 _LIBRARY = {
@@ -221,6 +222,8 @@ class Material:
                 self.section_data[MF, MT] = parse_mf26(file_obj)
             elif MF == 27:
                 self.section_data[MF, MT] = parse_mf27(file_obj)
+            elif MF == 28:
+                self.section_data[MF, MT] = parse_mf28(file_obj)
             else:
                 pass
 
