@@ -11,6 +11,7 @@ https://doi.org/10.2172/1425114.
 """
 import io
 from typing import List, Tuple, Any, Union, TextIO
+from warnings import warn
 
 import endf
 from .data import gnds_name
@@ -33,6 +34,7 @@ from .mf23 import parse_mf23
 from .mf26 import parse_mf26
 from .mf27 import parse_mf27
 from .mf28 import parse_mf28
+from .mf33 import parse_mf33
 
 
 _LIBRARY = {
@@ -224,8 +226,10 @@ class Material:
                 self.section_data[MF, MT] = parse_mf27(file_obj)
             elif MF == 28:
                 self.section_data[MF, MT] = parse_mf28(file_obj)
+            elif MF == 33:
+                self.section_data[MF, MT] = parse_mf33(file_obj)
             else:
-                pass
+                warn(f"{MF=}, {MT=} ignored")
 
     def __contains__(self, mf_mt: Tuple[int, int]) -> bool:
         return mf_mt in self.section_data
