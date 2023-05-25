@@ -4,7 +4,7 @@
 from typing import TextIO
 
 from .mf33 import parse_mf33_subsection
-from .records import get_head_record, get_cont_record, get_list_record
+from .records import get_head_record, get_cont_record
 
 
 def parse_mf40(file_obj: TextIO) -> dict:
