@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: 2023 International Atomic Energy Agency
+# SPDX-FileCopyrightText: 2023 OpenMC contributors and Paul Romano
 # SPDX-License-Identifier: MIT
 
 """Module for parsing and manipulating data from ENDF files.

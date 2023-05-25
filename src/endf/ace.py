@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: 2023 International Atomic Energy Agency
+# SPDX-FileCopyrightText: 2023 OpenMC contributors and Paul Romano
 # SPDX-License-Identifier: MIT
 
 """This module is for reading ACE-format cross sections. ACE stands for "A

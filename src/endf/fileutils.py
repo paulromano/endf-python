@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: 2023 International Atomic Energy Agency
+# SPDX-FileCopyrightText: 2023 Paul Romano
 # SPDX-License-Identifier: MIT
 
 import os
