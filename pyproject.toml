@@ -43,8 +43,8 @@ docs = [
 ]
 
 [project.urls]
-"Bug Tracker" = "https://github.com/paulromano/endf/issues"
-"Source Code" = "https://github.com/paulromano/endf"
+"Bug Tracker" = "https://github.com/paulromano/endf-python/issues"
+"Source Code" = "https://github.com/paulromano/endf-python"
 
 [tool.setuptools]
 package-dir = {"" = "src"}

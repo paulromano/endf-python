@@ -23,7 +23,7 @@ ENDF Python Interface
 
     .. grid-item-card:: \ :octicon:`comment-discussion;2em` Getting Help
         :text-align: center
-        :link: https://github.com/paulromano/endf/discussions
+        :link: https://github.com/paulromano/endf-python/discussions
 
         Have questions? Click here for our discussions forum.
 
