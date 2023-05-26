@@ -6,7 +6,7 @@
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
-project = 'endf'
+project = 'ENDF Python Interface'
 copyright = '2023, Paul Romano'
 author = 'Paul Romano'
 
@@ -41,7 +41,13 @@ html_theme_options = {
     "github_url": "https://github.com/paulromano/endf-python",
     #"navbar_end": ["navbar-icon-links"],
     "show_toc_level": 3,
+    "logo": {"text": project}
 }
 
 napoleon_use_rtype = False
-napoleon_use_ivar = True
+
+# TODO: Using ivar results in better looking documentation, but it breaks
+# cross-references to attributes which is annoying. Figure out a way to get it
+# to work with cross-references
+
+#napoleon_use_ivar = True
