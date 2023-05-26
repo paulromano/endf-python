@@ -51,3 +51,6 @@ napoleon_use_rtype = False
 # to work with cross-references
 
 #napoleon_use_ivar = True
+
+# -- Options for LaTeX output ------------------------------------------------
+latex_domain_indices = False

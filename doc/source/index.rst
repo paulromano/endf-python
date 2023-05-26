@@ -3,29 +3,31 @@
 ENDF Python Interface
 =====================
 
-.. grid:: 3
+.. only:: html
 
-    .. grid-item-card:: \ :octicon:`book;2em` User's Guide
-        :text-align: center
-        :link: user/index
-        :link-type: doc
+    .. grid:: 3
 
-        The user's guide contains instructions for installing and an overview of
-        the basic concepts.
+        .. grid-item-card:: \ :octicon:`book;2em` User's Guide
+            :text-align: center
+            :link: user/index
+            :link-type: doc
 
-    .. grid-item-card:: \ :octicon:`terminal;2em` API Reference
-        :text-align: center
-        :link: reference/index
-        :link-type: doc
+            The user's guide contains instructions for installing and an overview of
+            the basic concepts.
 
-        The reference guide provides detailed information on classes, methods,
-        arguments, return values, etc.
+        .. grid-item-card:: \ :octicon:`terminal;2em` API Reference
+            :text-align: center
+            :link: reference/index
+            :link-type: doc
 
-    .. grid-item-card:: \ :octicon:`comment-discussion;2em` Getting Help
-        :text-align: center
-        :link: https://github.com/paulromano/endf-python/discussions
+            The reference guide provides detailed information on classes, methods,
+            arguments, return values, etc.
 
-        Have questions? Click here for our discussions forum.
+        .. grid-item-card:: \ :octicon:`comment-discussion;2em` Getting Help
+            :text-align: center
+            :link: https://github.com/paulromano/endf-python/discussions
+
+            Have questions? Click here for our discussions forum.
 
 .. toctree::
     :maxdepth: 2
