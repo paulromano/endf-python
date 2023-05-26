@@ -107,23 +107,29 @@ class Material:
 
     Parameters
     ----------
-    filename
+    filename_or_obj
         Path to ENDF file to read or an open file positioned at the start of an
         ENDF material
 
     Attributes
     ----------
-    MAT : int
+    MAT
         ENDF material number
-    sections : list of tuple
+    sections
         List of (MF, MT) sections
-    section_text : dict
+    section_text
         Dictionary mapping (MF, MT) to corresponding section of the ENDF file.
-    section_data : dict
+    section_data
         Dictionary mapping (MF, MT) to a dictionary representing the
         corresponding section of the ENDF file.
 
     """
+    # TODO: Remove need to list properties here
+    MAT: int
+    sections: List[Tuple[int, int]]
+    section_text: dict
+    section_data: dict
+
     def __init__(self, filename_or_obj: Union[PathLike, TextIO]):
         if isinstance(filename_or_obj, PathLike.__args__):
             fh = open(str(filename_or_obj), 'r')

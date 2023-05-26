@@ -3,15 +3,33 @@
 API Reference
 =============
 
+.. module:: endf
+
+Low-level Interface
+-------------------
+
 .. autosummary::
    :toctree: generated
    :nosignatures:
    :template: myclass.rst
 
-   endf.Material
+   Material
 
 .. autosummary::
    :toctree: generated
    :nosignatures:
 
-   endf.get_materials
+   get_materials
+
+High-level Interface
+--------------------
+
+.. autosummary::
+   :toctree: generated
+   :nosignatures:
+   :template: myclass.rst
+
+   IncidentNeutron
+   Tabulated1D
+   Reaction
+   Product

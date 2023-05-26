@@ -7,7 +7,7 @@
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
 project = 'endf'
-copyright = '2023, International Atomic Energy Authority'
+copyright = '2023, Paul Romano'
 author = 'Paul Romano'
 
 # -- General configuration ---------------------------------------------------
@@ -44,3 +44,4 @@ html_theme_options = {
 }
 
 napoleon_use_rtype = False
+napoleon_use_ivar = True
