@@ -4,7 +4,7 @@
 from typing import Union
 
 from .data import gnds_name, ATOMIC_SYMBOL
-from .endf import Material
+from .material import Material
 from .fileutils import PathLike
 from .reaction import Reaction, REACTION_MT
 

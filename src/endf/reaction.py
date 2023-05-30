@@ -8,7 +8,7 @@ import numpy as np
 from numpy.polynomial import Polynomial
 
 from .data import gnds_name, ATOMIC_SYMBOL
-from .endf import Material
+from .material import Material
 from .function import Tabulated1D
 from .mf4 import AngleDistribution
 from .mf5 import EnergyDistribution, LevelInelastic
