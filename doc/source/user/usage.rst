@@ -102,11 +102,12 @@ either by calling the :meth:`endf.Material.interpret` method::
     mat = endf.Material('n-092_U_235.endf')
     u235 = mat.interpret()
 
-or by directly passing a filename to the :class:`~endf.IncidentNeutron` class:
+or by directly passing a filename to the :meth:`endf.IncidentNeutron.from_endf`
+method:
 
 .. code-block:: pycon
 
-    >>> u235 = endf.IncidentNeutron('n-092_U_235.endf')
+    >>> u235 = endf.IncidentNeutron.from_endf('n-092_U_235.endf')
     >>> u235
     <IncidentNeutron: U235, 85 reactions>
 

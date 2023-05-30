@@ -1,19 +1,22 @@
 # SPDX-FileCopyrightText: 2023 OpenMC contributors and Paul Romano
 # SPDX-License-Identifier: MIT
 
+from __future__ import annotations
 from copy import deepcopy
 from typing import List, Tuple
+from warnings import warn
 
 import numpy as np
 from numpy.polynomial import Polynomial
 
-from .data import gnds_name, ATOMIC_SYMBOL
+from .data import gnds_name, temperature_str, ATOMIC_SYMBOL, EV_PER_MEV
 from .material import Material
 from .function import Tabulated1D
 from .mf4 import AngleDistribution
 from .mf5 import EnergyDistribution, LevelInelastic
 from .mf6 import UncorrelatedAngleEnergy
 from .product import Product
+from . import ace
 
 
 REACTION_NAME = {
@@ -317,41 +320,72 @@ class Reaction:
     ----------
     mt : int
         The ENDF MT number for this reaction.
-
-    Attributes
-    ----------
-    redundant : bool
-        Indicates whether or not this is a redundant reaction
-    MT : int
-        The ENDF MT number for this reaction.
-    q_reaction : float
-        The reaction Q-value in [eV].
-    q_massdiff : float
-        The mass-difference Q value in [eV].
     xs : dict
         Microscopic cross section for this reaction as a function of incident
         energy; these cross sections are provided in a dictionary where the key
         is the temperature of the cross section set.
     products : list
         Reaction products
+    q_reaction : float
+        The reaction Q-value in [eV].
+    q_massdiff : float
+        The mass-difference Q value in [eV].
+    redundant : bool
+        Indicates whether or not this is a redundant reaction
+
+    Attributes
+    ----------
+    MT : int
+        The ENDF MT number for this reaction.
+    products : list
+        Reaction products
+    q_reaction : float
+        The reaction Q-value in [eV].
+    q_massdiff : float
+        The mass-difference Q value in [eV].
+    redundant : bool
+        Indicates whether or not this is a redundant reaction
+    xs : dict
+        Microscopic cross section for this reaction as a function of incident
+        energy; these cross sections are provided in a dictionary where the key
+        is the temperature of the cross section set.
 
     """
-
-    def __init__(self, MT: int, material: Material):
+    def __init__(self, MT: int, xs: dict = None, products: List[Product] = None,
+                 q_reaction: float = 0.0, q_massdiff: float = 0.0,
+                 redundant: bool = False):
         self.MT = MT
+        self.xs = xs
+        self.products = products
+        self.q_reaction = q_reaction
+        self.q_massdiff = q_massdiff
+        self.redundant = redundant
 
+    @classmethod
+    def from_endf(cls, MT: int, material: Material) -> Reaction:
+        """Generate reaction from ENDF file
+
+        Parameters
+        ----------
+        MT
+            MT value of the reaction
+        material
+            ENDF
+
+        """
         # Get reaction cross section and Q values from MF=3
         rx = material[3, MT]
-        self.q_massdiff = rx['QM']
-        self.q_reaction = rx['QI']
+        q_massdiff = rx['QM']
+        q_reaction = rx['QI']
         # TODO: Do something with breakup reaction flag
-        self.xs = {'0K': rx['sigma']}
+        xs = {'0K': rx['sigma']}
 
         # Get fission product yields (nu) as well as delayed neutron energy
         # distributions
-        self.products = []
+        products = []
         if MT in FISSION_MTS:
-            self.products, self.derived_products = _get_fission_products_endf(material, MT)
+            products, derived_products = _get_fission_products_endf(material, MT)
+            # TODO: Store derived products somewhere
 
         if (6, MT) in material:
             # Product angle-energy distribution
@@ -360,10 +394,10 @@ class Reaction:
                 # the distribution to the existing products. Otherwise, add the
                 # product to the reaction.
                 if MT in FISSION_MTS and product.name == 'neutron':
-                    self.products[0].applicability = product.applicability
-                    self.products[0].distribution = product.distribution
+                    products[0].applicability = product.applicability
+                    products[0].distribution = product.distribution
                 else:
-                    self.products.append(product)
+                    products.append(product)
 
         elif (4, MT) in material or (5, MT) in material:
             # Uncorrelated angle-energy distribution
@@ -391,7 +425,7 @@ class Reaction:
                 dist = UncorrelatedAngleEnergy()
 
                 A = material[1, 451]['AWR']
-                threshold = (A + 1.)/A*abs(self.q_reaction)
+                threshold = (A + 1.)/A*abs(q_reaction)
                 mass_ratio = (A/(A + 1.))**2
                 dist.energy = LevelInelastic(threshold, mass_ratio)
 
@@ -404,21 +438,116 @@ class Reaction:
 
             if MT in FISSION_MTS and (5, MT) in material:
                 # For fission reactions,
-                self.products[0].applicability = neutron.applicability
-                self.products[0].distribution = neutron.distribution
+                products[0].applicability = neutron.applicability
+                products[0].distribution = neutron.distribution
             else:
-                self.products.append(neutron)
+                products.append(neutron)
 
         if (8, MT) in material:
             for act_product in _get_activation_products(material, MT, rx['sigma']):
                 # Check if product already exists from MF=6 and if it does, just
                 # overwrite the existing yield.
-                for product in self.products:
+                for product in products:
                     if act_product.name == product.name:
                         product.yield_ = act_product.yield_
                         break
                 else:
-                    self.products.append(act_product)
+                    products.append(act_product)
+
+        return cls(MT, xs, products, q_reaction, q_massdiff)
+
+    @classmethod
+    def from_ace(cls, table: ace.Table, i_reaction: int):
+        """Generate incident neutron continuous-energy data from an ACE table
+
+        Parameters
+        ----------
+        table
+            ACE table to read from
+        i_reaction
+            Index of the reaction in the ACE table
+
+        Returns
+        -------
+        Reaction data
+
+        """
+        # Get nuclide energy grid
+        n_grid = table.nxs[3]
+        grid = table.xss[table.jxs[1]:table.jxs[1] + n_grid]*EV_PER_MEV
+
+        # Convert temperature to a string for indexing data
+        strT = temperature_str(table.temperature)
+
+        if i_reaction > 0:
+            # Get MT value
+            MT = int(table.xss[table.jxs[3] + i_reaction - 1])
+
+            # Get Q-value of reaction
+            q_reaction = table.xss[table.jxs[4] + i_reaction - 1]*EV_PER_MEV
+
+            # ==================================================================
+            # CROSS SECTION
+
+            # Get locator for cross-section data
+            loc = int(table.xss[table.jxs[6] + i_reaction - 1])
+
+            # Determine starting index on energy grid
+            threshold_idx = int(table.xss[table.jxs[7] + loc - 1]) - 1
+
+            # Determine number of energies in reaction
+            n_energy = int(table.xss[table.jxs[7] + loc])
+            energy = grid[threshold_idx:threshold_idx + n_energy]
+
+            # Read reaction cross section
+            xs = table.xss[table.jxs[7] + loc + 1:table.jxs[7] + loc + 1 + n_energy]
+
+            # For damage energy production, convert to eV
+            if MT == 444:
+                xs *= EV_PER_MEV
+
+            # Warn about negative cross sections
+            if np.any(xs < 0.0):
+                warn(f"Negative cross sections found for {MT=} in {table.name}.")
+
+            tabulated_xs = {strT: Tabulated1D(energy, xs)}
+            rx = Reaction(MT, tabulated_xs, q_reaction=q_reaction)
+
+            # ==================================================================
+            # YIELD AND ANGLE-ENERGY DISTRIBUTION
+
+            # TODO: Read yield and angle-energy distribution
+
+        else:
+            # Elastic scattering
+            mt = 2
+
+            # Get elastic cross section values
+            elastic_xs = table.xss[table.jxs[1] + 3*n_grid:table.jxs[1] + 4*n_grid]
+
+            # Warn about negative elastic scattering cross section
+            if np.any(elastic_xs < 0.0):
+                warn(f"Negative elastic scattering cross section found for {table.name}.")
+
+            xs = {strT: Tabulated1D(grid, elastic_xs)}
+
+            # No energy distribution for elastic scattering
+            # TODO: Create product
+
+            rx = Reaction(2, xs)
+
+        # ======================================================================
+        # ANGLE DISTRIBUTION (FOR UNCORRELATED)
+
+        # TODO: Read angular distribution
+
+        # ======================================================================
+        # PHOTON PRODUCTION
+
+        # TODO: Read photon production
+
+        return rx
+
 
     def __repr__(self):
         name = REACTION_NAME.get(self.MT)

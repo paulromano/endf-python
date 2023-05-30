@@ -18,11 +18,12 @@ generates ACE-format cross sections.
 
 """
 
+from __future__ import annotations
 from collections import OrderedDict
 import enum
 from pathlib import Path
 import struct
-from typing import Tuple
+from typing import Tuple, List, Union, Optional, Iterable, TextIO
 
 import numpy as np
 
@@ -188,7 +189,11 @@ def get_table(filename: PathLike, name: str = None):
 _ACE_HEADER_SIZE = 12
 
 
-def get_tables(filename, table_names=None, verbose=False):
+def get_tables(
+    filename: PathLike,
+    table_names: Optional[Union[str, Iterable[str]]] = None,
+    verbose: bool = False
+):
     """Get all tables from an ACE-formatted file.
 
     Parameters
@@ -265,7 +270,7 @@ def _read_binary(ace_file, table_names, verbose=False, recl_length=4096, entries
 
         # Read name, atomic mass ratio, temperature, date, comment, and
         # material
-        name, atomic_weight_ratio, temperature, date, comment, mat = \
+        name, atomic_weight_ratio, kT, *_ = \
             struct.unpack('=10sdd10s70s10s', ace_file.read(116))
         name = name.decode().strip()
 
@@ -286,7 +291,7 @@ def _read_binary(ace_file, table_names, verbose=False, recl_length=4096, entries
             continue
 
         if verbose:
-            kelvin = round(temperature * EV_PER_MEV / K_BOLTZMANN)
+            kelvin = round(kT * EV_PER_MEV / K_BOLTZMANN)
             print(f"Loading nuclide {name} at {kelvin} K")
 
         # Read JXS
@@ -309,15 +314,18 @@ def _read_binary(ace_file, table_names, verbose=False, recl_length=4096, entries
         xss = np.array(xss)
 
         # Create ACE table with data read in
-        table = Table(name, atomic_weight_ratio, temperature, pairs,
-                        nxs, jxs, xss)
+        table = Table(name, atomic_weight_ratio, kT, pairs, nxs, jxs, xss)
         tables.append(table)
 
         # Advance to next record
         ace_file.seek(start_position + recl_length*(n_records + 1))
 
 
-def _read_ascii(ace_file, table_names, verbose=False):
+def _read_ascii(
+    ace_file: TextIO,
+    table_names: Optional[Union[str, Iterable[str]]] = None,
+    verbose: bool = False
+):
     """Read an ASCII (Type 1) ACE table.
 
     Parameters
@@ -346,7 +354,7 @@ def _read_ascii(ace_file, table_names, verbose=False):
             name = words[1]
             words = lines[1].split()
             atomic_weight_ratio = float(words[0])
-            temperature = float(words[1])
+            kT = float(words[1])
             commentlines = int(words[3])
             for _ in range(commentlines):
                 lines.pop(0)
@@ -355,7 +363,7 @@ def _read_ascii(ace_file, table_names, verbose=False):
             words = lines[0].split()
             name = words[0]
             atomic_weight_ratio = float(words[1])
-            temperature = float(words[2])
+            kT = float(words[2])
 
         datastr = ' '.join(lines[2:6]).split()
         pairs = list(zip(map(int, datastr[::2]),
@@ -384,8 +392,8 @@ def _read_ascii(ace_file, table_names, verbose=False):
         lines += [ace_file.readline() for i in range(n_lines - 1)]
 
         if verbose:
-            kelvin = round(temperature * EV_PER_MEV / K_BOLTZMANN)
-            print("Loading nuclide {} at {} K".format(name, kelvin))
+            kelvin = round(kT * EV_PER_MEV / K_BOLTZMANN)
+            print(f"Loading nuclide {name} at {kelvin} K")
 
         # Insert zeros at beginning of NXS, JXS, and XSS arrays so that the
         # indexing will be the same as Fortran. This makes it easier to
@@ -407,8 +415,7 @@ def _read_ascii(ace_file, table_names, verbose=False):
             xss = np.fromstring(datastr, sep=' ')
             assert xss.size == nxs[1] + 1
 
-        table = Table(name, atomic_weight_ratio, temperature, pairs,
-                        nxs, jxs, xss)
+        table = Table(name, atomic_weight_ratio, kT, pairs, nxs, jxs, xss)
         tables.append(table)
 
         # Read all data blocks
@@ -432,7 +439,7 @@ class TableType(enum.Enum):
     ALPHA = 'a'
 
     @classmethod
-    def from_suffix(cls, suffix):
+    def from_suffix(cls, suffix: str) -> TableType:
         """Determine ACE table type from a suffix.
 
         Parameters
@@ -458,11 +465,11 @@ class Table:
     Parameters
     ----------
     name : str
-        ZAID identifier of the table, e.g. '92235.70c'.
+        Full ACE table identifier, e.g., '92235.70c'.
     atomic_weight_ratio : float
         Atomic mass ratio of the target nuclide.
-    temperature : float
-        Temperature of the target nuclide in MeV.
+    kT : float
+        Temperature of the target nuclide in [MeV]
     pairs : list of tuple
         16 pairs of ZAIDs and atomic weight ratios. Used for thermal scattering
         tables to indicate what isotopes scattering is applied to.
@@ -478,43 +485,51 @@ class Table:
     ----------
     data_type : TableType
         Type of the ACE data
+    temperature : float
+        Temperature of the target nuclide in [K]
+    zaid : int
+        ZAID identifier of the table, e.g., 92235
 
     """
-    def __init__(self, name, atomic_weight_ratio, temperature, pairs,
-                 nxs, jxs, xss):
+    def __init__(self, name: str, atomic_weight_ratio: float, kT: float,
+                 pairs: List[Tuple[int, float]],
+                 nxs: np.ndarray, jxs: np.ndarray, xss: np.ndarray):
         self.name = name
         self.atomic_weight_ratio = atomic_weight_ratio
-        self.temperature = temperature
+        self.kT = kT
         self.pairs = pairs
         self.nxs = nxs
         self.jxs = jxs
         self.xss = xss
 
     @property
-    def zaid(self):
-        return self.name.split('.')[0]
+    def zaid(self) -> int:
+        return int(self.name.split('.')[0])
 
     @property
-    def data_type(self):
+    def data_type(self) -> TableType:
         xs = self.name.split('.')[1]
         return TableType.from_suffix(xs[-1])
 
-    def __repr__(self):
-        return f"<ACE Table: {self.name}>"
+    @property
+    def temperature(self) -> float:
+        return self.kT / K_BOLTZMANN
+
+    def __repr__(self) -> str:
+        return f"<ACE Table: {self.name} at {self.temperature} K>"
 
 
-def get_libraries_from_xsdir(path):
+def get_libraries_from_xsdir(path: PathLike) -> List[Path]:
     """Determine paths to ACE files from an MCNP xsdir file.
 
     Parameters
     ----------
-    path : str or path-like
+    path
         Path to xsdir file
 
     Returns
     -------
-    list
-        List of paths to ACE libraries
+    List of paths to ACE libraries
     """
     xsdir = Path(path)
 
@@ -534,9 +549,8 @@ def get_libraries_from_xsdir(path):
     for i in reversed(continue_lines):
         lines[i] = lines[i].strip()[:-1] + lines.pop(i + 1)
 
-    # Create list of ACE libraries -- we use an ordered dictionary while
-    # building to get O(1) membership checks while retaining insertion order
-    libraries = OrderedDict()
+    # Create list of ACE libraries
+    libraries = {}
     for line in lines:
         words = line.split()
         if len(words) < 3:
@@ -551,18 +565,17 @@ def get_libraries_from_xsdir(path):
     return list(libraries.keys())
 
 
-def get_libraries_from_xsdata(path):
+def get_libraries_from_xsdata(path: PathLike) -> List[Path]:
     """Determine paths to ACE files from a Serpent xsdata file.
 
     Parameters
     ----------
-    path : str or path-like
+    path
         Path to xsdata file
 
     Returns
     -------
-    list
-        List of paths to ACE libraries
+    List of paths to ACE libraries
     """
     xsdata = Path(path)
     with open(xsdata, 'r') as xsdata_file:
