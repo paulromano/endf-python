@@ -23,13 +23,14 @@ from collections import OrderedDict
 import enum
 from pathlib import Path
 import struct
-from typing import Tuple, List, Union, Optional, Iterable, TextIO
+from typing import Tuple, List, Union, Optional, Iterable, TextIO, Any
 
 import numpy as np
 
 from .data import ATOMIC_SYMBOL, gnds_name, EV_PER_MEV, K_BOLTZMANN
 from .fileutils import PathLike
 from .records import ENDF_FLOAT_RE
+import endf
 
 
 def get_metadata(zaid: int, metastable_scheme: str = 'nndc') -> Tuple[str, str, int, int, int]:
@@ -489,6 +490,13 @@ class Table:
         Temperature of the target nuclide in [K]
     zaid : int
         ZAID identifier of the table, e.g., 92235
+    nxs : numpy.ndarray
+        Array that defines various lengths with in the table
+    jxs : numpy.ndarray
+        Array that gives locations in the ``xss`` array for various blocks of
+        data
+    xss : numpy.ndarray
+        Raw data for the ACE table
 
     """
     def __init__(self, name: str, atomic_weight_ratio: float, kT: float,
@@ -517,6 +525,25 @@ class Table:
 
     def __repr__(self) -> str:
         return f"<ACE Table: {self.name} at {self.temperature:.1f} K>"
+
+    def interpret(self, **kwargs) -> Any:
+        """Get high-level interface class for the ACE table
+
+        Parameters
+        ----------
+        **kwargs
+            Keyword-arguments passed to the high-level interface class
+
+        Returns
+        -------
+        Instance of a high-level interface class, e.g.,
+        :class:`endf.IncidentNeutron`.
+
+        """
+        if self.data_type == TableType.NEUTRON_CONTINUOUS:
+            return endf.IncidentNeutron.from_ace(self, **kwargs)
+        else:
+            raise NotImplementedError(f"No class implemented for {self.data_type}")
 
 
 def get_libraries_from_xsdir(path: PathLike) -> List[Path]:

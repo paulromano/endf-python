@@ -82,6 +82,8 @@ array of corresponding values:
     array([0.183841  , 0.25245628, 0.3152985 , 0.3550485 , 0.3947985 ,
            0.43081767, 0.463106  , 0.49255778, 0.52108125, 0.55290937])
 
+.. _high_level_interface:
+
 High-level Interface
 ++++++++++++++++++++
 
@@ -187,3 +189,49 @@ The yield of a given product is accessed through the
     >>> photon = n2n.products[-1]
     >>> photon.yield_
     <Tabulated1D: 39 points, 1 regions>
+
+ACE Files
++++++++++
+
+Working with ACE files is conceptually similar to ENDF files. A low-level
+interface provides access to the raw data within an ACE file (the `NXS`, `JXS`,
+and `XSS` arrays) and the same high-level interface classes, e.g.,
+:class:`endf.IncidentNeutron` can be used to more easily inspect data. If you
+have an ACE file with a single table within it, you can load it with the
+:func:`endf.ace.get_table` function, which returns a :class:`endf.ace.Table`
+object:
+
+.. code-block:: pycon
+
+    >>> table = endf.ace.get_table('80198.710nc')
+    >>> table
+    <ACE Table: 80198.710nc at 293.6 K>
+
+Raw access to the underlying arrays in the ACE file is provided via the
+:attr:`~endf.ace.Table.nxs`, :attr:`~endf.ace.Table.jxs`, and
+:attr:`~endf.ace.Table.xss` attributes:
+
+.. code-block:: pycon
+
+    >>> table.nxs
+    array([     0, 172118,  80198,   3180,     34,     25,     97,      4,
+                0,      0,     80,    198,      0,      0,      0,      0,
+                0])
+
+Note that each of these arrays is prepended with an extra zero at the beginning
+so that the indexing follows the Fortran 1-based indexing that is referenced in
+the ACE format manual.
+
+As with the :class:`~endf.Material` class, the :class:`~endf.ace.Table` class
+has a :meth:`~endf.ace.Table.interpret` that returns a corresponding high-level
+interface class. For continuous-energy neutron data, this method will return an
+:class:`~endf.IncidentNeutron` object:
+
+.. code-block:: pycon
+
+    >>> hg198 = table.interpret()
+    >>> hg198
+    <IncidentNeutron: Hg198, 38 reactions>
+
+From this point, the interface follows exactly as is shown in
+:ref:`high_level_interface`.

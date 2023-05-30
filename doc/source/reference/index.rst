@@ -33,3 +33,22 @@ High-level Interface
    Tabulated1D
    Reaction
    Product
+
+ACE File Interface
+------------------
+
+.. autosummary::
+   :toctree: generated
+   :nosignatures:
+   :template: myclass.rst
+
+   ace.Table
+   ace.TableType
+
+.. autosummary::
+   :toctree: generated
+   :nosignatures:
+
+   ace.get_table
+   ace.get_tables
+   ace.get_libraries_from_xsdir
