@@ -1,10 +1,10 @@
 [build-system]
-requires = ["setuptools>=61", "pybind11>=2.10.0"]
+requires = ["setuptools>=61", "pybind11>=2.10.0", "setuptools_scm[toml]>=6.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "endf"
-version = "0.1.0"
+dynamic = ["version"]
 authors = [
     { name = "Paul Romano", email = "paul.k.romano@gmail.com" },
 ]
@@ -27,7 +27,7 @@ classifiers = [
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
 ]
-requires-python = ">=3.7"
+requires-python = ">=3.8"
 dependencies = [
     "numpy",
     "uncertainties",
@@ -51,3 +51,5 @@ package-dir = {"" = "src"}
 
 [tool.setuptools.packages.find]
 where = ["src"]
+
+[tool.setuptools_scm]

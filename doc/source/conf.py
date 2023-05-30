@@ -6,9 +6,14 @@
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
+from importlib.metadata import version as metadata_version
+
 project = 'ENDF Python Interface'
 copyright = '2023, Paul Romano'
 author = 'Paul Romano'
+
+release = metadata_version('endf')
+version = '.'.join(release.split('.')[:2])
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
