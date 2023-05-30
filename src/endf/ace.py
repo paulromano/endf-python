@@ -513,10 +513,10 @@ class Table:
 
     @property
     def temperature(self) -> float:
-        return self.kT / K_BOLTZMANN
+        return self.kT * EV_PER_MEV / K_BOLTZMANN
 
     def __repr__(self) -> str:
-        return f"<ACE Table: {self.name} at {self.temperature} K>"
+        return f"<ACE Table: {self.name} at {self.temperature:.1f} K>"
 
 
 def get_libraries_from_xsdir(path: PathLike) -> List[Path]:
