@@ -86,9 +86,6 @@ _GNDS_NAME_RE = re.compile(r'([A-Zn][a-z]*)(\d+)((?:_[em]\d+)?)')
 def gnds_name(Z: int, A: int, m: int = 0) -> str:
     """Return nuclide name using GNDS convention
 
-    .. versionchanged:: 0.14.0
-        Function name changed from ``gnd_name`` to ``gnds_name``
-
     Parameters
     ----------
     Z

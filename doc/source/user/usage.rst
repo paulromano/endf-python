@@ -47,6 +47,20 @@ individual pieces of data from the ENDF file:
     'LR': 0,
     'sigma': <Tabulated1D: 39 points, 1 regions>}
 
+Note that indexing the :class:`~endf.Material` object directly is equivalent to
+indexing the :attr:`~endf.Material.section_data` attribute:
+
+.. code-block:: pycon
+
+    >>> mat[3, 16]
+    {'ZA': 92235,
+    'AWR': 233.0248,
+    'QM': -5298000.0,
+    'QI': -5298000.0,
+    'LR': 0,
+    'sigma': <Tabulated1D: 39 points, 1 regions>}
+
+
 Tabulated1D Objects
 ~~~~~~~~~~~~~~~~~~~
 

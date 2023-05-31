@@ -14,7 +14,6 @@ from typing import List, Tuple, Any, Union, TextIO
 from warnings import warn
 
 import endf
-from .data import gnds_name
 from .fileutils import PathLike
 from .mf1 import parse_mf1_mt451, parse_mf1_mt452, parse_mf1_mt455, \
     parse_mf1_mt458, parse_mf1_mt460
@@ -238,13 +237,6 @@ class Material:
         name = metadata['ZSYMAM'].replace(' ', '')
         return '<{} for {} {}>'.format(_SUBLIBRARY[metadata['NSUB']], name,
                                        _LIBRARY[metadata['NLIB']])
-
-    @property
-    def gnds_name(self) -> str:
-        metadata = self[1, 451]
-        Z, A = divmod(metadata['ZA'], 1000)
-        m = metadata['LISO']
-        return gnds_name(Z, A, m)
 
     @property
     def sections(self) -> List[Tuple[int, int]]:
