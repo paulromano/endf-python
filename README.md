@@ -1,6 +1,7 @@
 # ENDF Python Interface
 
 [![License](https://img.shields.io/badge/license-MIT-green)](https://opensource.org/licenses/MIT)
+[![PyPI](https://img.shields.io/pypi/v/endf?label=PyPI)](https://pypi.org/project/endf)
 
 `endf` is a Python package for reading and interpreting
 [ENDF-6](https://doi.org/10.2172/1425114) and
