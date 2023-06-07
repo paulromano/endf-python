@@ -22,7 +22,7 @@ from .mf3 import parse_mf3
 from .mf4 import parse_mf4
 from .mf5 import parse_mf5
 from .mf6 import parse_mf6
-from .mf7 import parse_mf7_mt2, parse_mf7_mt4
+from .mf7 import parse_mf7_mt2, parse_mf7_mt4, parse_mf7_mt451
 from .mf8 import parse_mf8, parse_mf8_mt454, parse_mf8_mt457
 from .mf9 import parse_mf9_mf10
 from .mf12 import parse_mf12
@@ -190,6 +190,8 @@ class Material:
                 self.section_data[MF, MT] = parse_mf7_mt2(file_obj)
             elif MF == 7 and MT == 4:
                 self.section_data[MF, MT] = parse_mf7_mt4(file_obj)
+            elif MF == 7 and MT == 451:
+                self.section_data[MF, MT] = parse_mf7_mt451(file_obj)
             elif MF == 8 and MT in (454, 459):
                 self.section_data[MF, MT] = parse_mf8_mt454(file_obj)
             elif MF == 8 and MT == 457:

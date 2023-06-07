@@ -112,3 +112,39 @@ def parse_mf7_mt4(file_obj: TextIO) -> dict:
             data['Teff'].append(Teff)
 
     return data
+
+
+def parse_mf7_mt451(file_obj: TextIO) -> dict:
+    """Parse thermal scattering generalized information file from MF=7, MT=451
+
+    Parameters
+    ----------
+    file_obj
+        File-like object to read from
+
+    Returns
+    -------
+    dict
+        Thermal scattering data
+
+    """
+    # Read basic data from first record
+    ZA, AWR, NA, *_ = get_head_record(file_obj)
+    data = {'ZA': ZA, 'AWR': AWR, 'NA': NA}
+
+    # Read all other parameters from list record
+    data['elements'] = []
+    for _ in range(NA):
+        params, values = get_list_record(file_obj)
+        element = {
+            'NAS': params[2],
+            'NI': params[5],
+            'ZAI': values[::6],
+            'LISI': values[1::6],
+            'AFI': values[2::6],
+            'AWRI': values[3::6],
+            'SFI': values[4::6],
+        }
+        data['elements'].append(element)
+
+    return data
