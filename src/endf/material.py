@@ -10,7 +10,7 @@ https://doi.org/10.2172/1425114.
 
 """
 import io
-from typing import List, Tuple, Any, Union, TextIO
+from typing import List, Tuple, Any, Union, TextIO, Optional
 from warnings import warn
 
 import endf
@@ -90,6 +90,8 @@ class Material:
     filename_or_obj
         Path to ENDF file to read or an open file positioned at the start of an
         ENDF material
+    encoding
+        Encoding of the ENDF-6 formatted file
 
     Attributes
     ----------
@@ -110,9 +112,9 @@ class Material:
     section_text: dict
     section_data: dict
 
-    def __init__(self, filename_or_obj: Union[PathLike, TextIO]):
+    def __init__(self, filename_or_obj: Union[PathLike, TextIO], encoding: Optional[str] = None):
         if isinstance(filename_or_obj, PathLike.__args__):
-            fh = open(str(filename_or_obj), 'r')
+            fh = open(str(filename_or_obj), 'r', encoding=encoding)
             need_to_close = True
         else:
             fh = filename_or_obj
@@ -260,13 +262,15 @@ class Material:
             raise NotImplementedError(f"No class implemented for {NSUB=}")
 
 
-def get_materials(filename: PathLike) -> List[Material]:
+def get_materials(filename: PathLike, encoding: Optional[str] = None) -> List[Material]:
     """Return a list of all materials within an ENDF file.
 
     Parameters
     ----------
     filename
         Path to ENDF-6 formatted file
+    encoding
+        Encoding of the ENDF-6 formatted file
 
     Returns
     -------
@@ -274,7 +278,7 @@ def get_materials(filename: PathLike) -> List[Material]:
 
     """
     materials = []
-    with open(str(filename), 'r') as fh:
+    with open(str(filename), 'r', encoding=encoding) as fh:
         while True:
             pos = fh.tell()
             line = fh.readline()
