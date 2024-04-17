@@ -16,7 +16,7 @@
 
 double cfloat_endf(const char* buffer)
 {
-  char arr[12]; // 11 characters plus a null terminator
+  char arr[13]; // 11 characters plus e and a null terminator
   int j = 0; // current position in arr
   int found_significand = 0;
   int found_exponent = 0;
@@ -26,22 +26,11 @@ double cfloat_endf(const char* buffer)
 
   int i;
 
-  // Ensure that the length of the buffer doesn't exceed the size of arr
-  if (n > 11) {
-    throw std::runtime_error("Input buffer exceeds maximum length");
-  }
-
   for (i = 0; i < n; ++i) {
     char c = buffer[i];
 
     // Skip whitespace characters
     if (std::isspace(c)) continue;
-
-    // Catch leading minus sign
-    if (j == 0 && c == '-') {
-      arr[0] = c;
-      continue;
-    }
 
     if (found_significand) {
       if (!found_exponent) {
