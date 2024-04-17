@@ -25,11 +25,23 @@ double cfloat_endf(const char* buffer)
   int n = std::strlen(buffer);
 
   int i;
+
+  // Ensure that the length of the buffer doesn't exceed the size of arr
+  if (n > 11) {
+    throw std::runtime_error("Input buffer exceeds maximum length");
+  }
+
   for (i = 0; i < n; ++i) {
     char c = buffer[i];
 
     // Skip whitespace characters
-    if (c == ' ') continue;
+    if (std::isspace(c)) continue;
+
+    // Catch leading minus sign
+    if (j == 0 && c == '-') {
+      arr[0] = c;
+      continue;
+    }
 
     if (found_significand) {
       if (!found_exponent) {
@@ -51,6 +63,7 @@ double cfloat_endf(const char* buffer)
 
     // Copy character
     arr[j++] = c;
+    
   }
 
   // Done copying. Add null terminator and convert to double
