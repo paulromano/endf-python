@@ -16,7 +16,7 @@
 
 double cfloat_endf(const char* buffer)
 {
-  char arr[12]; // 11 characters plus a null terminator
+  char arr[13]; // 11 characters plus e and a null terminator
   int j = 0; // current position in arr
   int found_significand = 0;
   int found_exponent = 0;
@@ -25,6 +25,7 @@ double cfloat_endf(const char* buffer)
   int n = std::strlen(buffer);
 
   int i;
+
   for (i = 0; i < n; ++i) {
     char c = buffer[i];
 
@@ -51,6 +52,7 @@ double cfloat_endf(const char* buffer)
 
     // Copy character
     arr[j++] = c;
+    
   }
 
   // Done copying. Add null terminator and convert to double
