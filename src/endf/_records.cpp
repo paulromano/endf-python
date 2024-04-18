@@ -1,4 +1,5 @@
 #include <cstdlib>
+#include <cstring> // for strlen
 
 #include <pybind11/pybind11.h>
 
@@ -11,7 +12,6 @@
 //! only whitespace is to be interpreted as a zero.
 //
 //! \param buffer character input from an ENDF file
-//! \param n Length of character input
 //! \return Floating point number
 
 double cfloat_endf(const char* buffer)
@@ -23,15 +23,13 @@ double cfloat_endf(const char* buffer)
 
   // limit n to 11 characters
   int n = std::strlen(buffer);
+  if (n > 11) n = 11;
 
-  int i;
-
-  for (i = 0; i < n; ++i) {
+  for (int i = 0; i < n; ++i) {
     char c = buffer[i];
 
     // Skip whitespace characters
     if (c == ' ') continue;
-
     if (found_significand) {
       if (!found_exponent) {
         if (c == '+' || c == '-') {
@@ -52,7 +50,6 @@ double cfloat_endf(const char* buffer)
 
     // Copy character
     arr[j++] = c;
-    
   }
 
   // Done copying. Add null terminator and convert to double
