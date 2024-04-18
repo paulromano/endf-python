@@ -30,7 +30,7 @@ double cfloat_endf(const char* buffer)
     char c = buffer[i];
 
     // Skip whitespace characters
-    if (std::isspace(c)) continue;
+    if (c == ' ') continue;
 
     if (found_significand) {
       if (!found_exponent) {
