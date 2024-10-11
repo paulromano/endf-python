@@ -80,6 +80,21 @@ _SUBLIBRARY = {
     20040: 'Incident-alpha data'
 }
 
+class _DictWrapper(dict):
+
+    def __getitem__(self, key):
+        try:
+            super().__getitem__(key)
+        except KeyError as e:
+            if isinstance(key, tuple) and len(key) == 2:
+                key_text =f"MF={key[0]}, MT={key[1]}"
+            else:
+                key_text = str(key)
+            raise KeyError(f"The requested data: {key_text} are not present in this file.")
+
+    #try to make immutable
+    __setitem__ = None
+
 
 
 class Material:
