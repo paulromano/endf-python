@@ -106,11 +106,6 @@ class Material:
         corresponding section of the ENDF file.
 
     """
-    # TODO: Remove need to list properties here
-    MAT: int
-    sections: List[Tuple[int, int]]
-    section_text: dict
-    section_data: dict
 
     def __init__(self, filename_or_obj: Union[PathLike, TextIO], encoding: Optional[str] = None):
         if isinstance(filename_or_obj, PathLike.__args__):
@@ -119,7 +114,7 @@ class Material:
         else:
             fh = filename_or_obj
             need_to_close = False
-        self.section_text = {}
+        self._section_text = {}
 
         # Skip TPID record. Evaluators sometimes put in TPID records that are
         # ill-formated because they lack MF/MT values or put them in the wrong
@@ -133,7 +128,7 @@ class Material:
             position = fh.tell()
             line = fh.readline()
             MF = int(line[70:72])
-        self.MAT = int(line[66:70])
+        self._MAT = int(line[66:70])
         fh.seek(position)
 
         while True:
@@ -160,91 +155,132 @@ class Material:
                     break
                 else:
                     section_text += line
-            self.section_text[MF, MT] = section_text
+            self._section_text[MF, MT] = section_text
 
         if need_to_close:
             fh.close()
 
-        self.section_data = {}
-        for (MF, MT), text in self.section_text.items():
+        self._section_data = {}
+        for (MF, MT), text in self._section_text.items():
             file_obj = io.StringIO(text)
             if MF == 1 and MT == 451:
-                self.section_data[MF, MT] = parse_mf1_mt451(file_obj)
+                self._section_data[MF, MT] = parse_mf1_mt451(file_obj)
             elif MF == 1 and MT in (452, 456):
-                self.section_data[MF, MT] = parse_mf1_mt452(file_obj)
+                self._section_data[MF, MT] = parse_mf1_mt452(file_obj)
             elif MF == 1 and MT == 455:
-                self.section_data[MF, MT] = parse_mf1_mt455(file_obj)
+                self._section_data[MF, MT] = parse_mf1_mt455(file_obj)
             elif MF == 1 and MT == 458:
-                self.section_data[MF, MT] = parse_mf1_mt458(file_obj)
+                self._section_data[MF, MT] = parse_mf1_mt458(file_obj)
             elif MF == 1 and MT == 460:
-                self.section_data[MF, MT] = parse_mf1_mt460(file_obj)
+                self._section_data[MF, MT] = parse_mf1_mt460(file_obj)
             elif MF == 2 and MT == 151:
-                self.section_data[MF, MT] = parse_mf2(file_obj)
+                self._section_data[MF, MT] = parse_mf2(file_obj)
             elif MF == 3:
-                self.section_data[MF, MT] = parse_mf3(file_obj)
+                self._section_data[MF, MT] = parse_mf3(file_obj)
             elif MF == 4:
-                self.section_data[MF, MT] = parse_mf4(file_obj)
+                self._section_data[MF, MT] = parse_mf4(file_obj)
             elif MF == 5:
-                self.section_data[MF, MT] = parse_mf5(file_obj)
+                self._section_data[MF, MT] = parse_mf5(file_obj)
             elif MF == 6:
-                self.section_data[MF, MT] = parse_mf6(file_obj)
+                self._section_data[MF, MT] = parse_mf6(file_obj)
             elif MF == 7 and MT == 2:
-                self.section_data[MF, MT] = parse_mf7_mt2(file_obj)
+                self._section_data[MF, MT] = parse_mf7_mt2(file_obj)
             elif MF == 7 and MT == 4:
-                self.section_data[MF, MT] = parse_mf7_mt4(file_obj)
+                self._section_data[MF, MT] = parse_mf7_mt4(file_obj)
             elif MF == 7 and MT == 451:
-                self.section_data[MF, MT] = parse_mf7_mt451(file_obj)
+                self._section_data[MF, MT] = parse_mf7_mt451(file_obj)
             elif MF == 8 and MT in (454, 459):
-                self.section_data[MF, MT] = parse_mf8_mt454(file_obj)
+                self._section_data[MF, MT] = parse_mf8_mt454(file_obj)
             elif MF == 8 and MT == 457:
-                self.section_data[MF, MT] = parse_mf8_mt457(file_obj)
+                self._section_data[MF, MT] = parse_mf8_mt457(file_obj)
             elif MF == 8:
-                self.section_data[MF, MT] = parse_mf8(file_obj)
+                self._section_data[MF, MT] = parse_mf8(file_obj)
             elif MF in (9, 10):
-                self.section_data[MF, MT] = parse_mf9_mf10(file_obj, MF)
+                self._section_data[MF, MT] = parse_mf9_mf10(file_obj, MF)
             elif MF == 12:
-                self.section_data[MF, MT] = parse_mf12(file_obj)
+                self._section_data[MF, MT] = parse_mf12(file_obj)
             elif MF == 13:
-                self.section_data[MF, MT] = parse_mf13(file_obj)
+                self._section_data[MF, MT] = parse_mf13(file_obj)
             elif MF == 14:
-                self.section_data[MF, MT] = parse_mf14(file_obj)
+                self._section_data[MF, MT] = parse_mf14(file_obj)
             elif MF == 15:
-                self.section_data[MF, MT] = parse_mf15(file_obj)
+                self._section_data[MF, MT] = parse_mf15(file_obj)
             elif MF == 23:
-                self.section_data[MF, MT] = parse_mf23(file_obj)
+                self._section_data[MF, MT] = parse_mf23(file_obj)
             elif MF == 26:
-                self.section_data[MF, MT] = parse_mf26(file_obj)
+                self._section_data[MF, MT] = parse_mf26(file_obj)
             elif MF == 27:
-                self.section_data[MF, MT] = parse_mf27(file_obj)
+                self._section_data[MF, MT] = parse_mf27(file_obj)
             elif MF == 28:
-                self.section_data[MF, MT] = parse_mf28(file_obj)
+                self._section_data[MF, MT] = parse_mf28(file_obj)
             elif MF == 33:
-                self.section_data[MF, MT] = parse_mf33(file_obj)
+                self._section_data[MF, MT] = parse_mf33(file_obj)
             elif MF == 34:
-                self.section_data[MF, MT] = parse_mf34(file_obj, MT)
+                self._section_data[MF, MT] = parse_mf34(file_obj, MT)
             elif MF == 40:
-                self.section_data[MF, MT] = parse_mf40(file_obj)
+                self._section_data[MF, MT] = parse_mf40(file_obj)
             else:
                 warn(f"{MF=}, {MT=} ignored")
 
     def __contains__(self, mf_mt: Tuple[int, int]) -> bool:
-        return mf_mt in self.section_data
+        return mf_mt in self._section_data
 
     def __getitem__(self, mf_mt: Tuple[int, int]) -> dict:
-        return self.section_data[mf_mt]
+        return self._section_data[mf_mt]
 
     def __setitem__(self, key: Tuple[int, int], value):
-        self.section_data[key] = value
+        self._section_data[key] = value
 
     def __repr__(self) -> str:
-        metadata = self.section_data[1, 451]
+        metadata = self._section_data[1, 451]
         name = metadata['ZSYMAM'].replace(' ', '')
         return '<{} for {} {}>'.format(_SUBLIBRARY[metadata['NSUB']], name,
                                        _LIBRARY[metadata['NLIB']])
 
     @property
+    def MAT(self) -> int:
+        """
+        The material number for this material.
+
+        .. note::
+            This does not follow typical ZAID convention,
+            and are generally library specific.
+
+        Returns
+        -------
+        The MAT number for this material.
+        """
+        return self._MAT
+
+    @property
     def sections(self) -> List[Tuple[int, int]]:
-        return list(self.section_text.keys())
+        return list(self._section_text.keys())
+
+    @property
+    def section_text(self) -> dict[Tuple[int, int], str]:
+        """
+        The text of the ENDF split by material tables.
+
+        The keys of the dictionary are a 2-tuple of (material file (MF), material table(MT)).
+
+        Returns
+        -------
+        A dictionary of the sections of text read from the ENDF split by tables.
+        """
+        return _DictWrapper(self._section_text)
+
+    @property
+    def section_data(self) ->dict[Tuple[int, int], list[int]]: #TODO what is the type of the data?
+        """
+        The interpreted data of the ENDF split by material tables.
+
+        The keys of the dictionary are a 2-tuple of (material file (MF), material table(MT)).
+
+        Returns
+        -------
+        A dictionary of the sections of the interpreted data read from the ENDF split by tables.
+        """
+        return _DictWrapper(self._section_data)
 
     def interpret(self) -> Any:
         """Get high-level interface class for the ENDF material
@@ -255,7 +291,7 @@ class Material:
         :class:`endf.IncidentNeutron`.
 
         """
-        NSUB = self.section_data[1, 451]['NSUB']
+        NSUB = self._section_data[1, 451]['NSUB']
         if NSUB == 10:
             return endf.IncidentNeutron.from_endf(self)
         else:
