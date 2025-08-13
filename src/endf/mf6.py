@@ -120,10 +120,11 @@ class DiscreteTwoBodyScattering:
         for i in range(NE):
             items, values = get_list_record(file_obj)
             _, E_i, LANG, _, NW, NL = items
-            dist = {'LANG': LANG, 'NW': NW, 'NL': NL}
+            dist = {'LANG': LANG, 'NW': NW, 'NL': NL, 'A_l': np.asarray(values)}
             data['E'][i] = E_i
-            data['A_l'] = np.asarray(values)
             data['distribution'].append(dist)
+
+        return data
 
 
 class ChargedParticleElasticScattering:
