@@ -8,7 +8,7 @@ dynamic = ["version"]
 authors = [
     { name = "Paul Romano", email = "paul.k.romano@gmail.com" },
 ]
-license = { file = "LICENSE" }
+license = "MIT"
 description = "Python interface to ENDF-6 files"
 readme = "README.md"
 classifiers = [
@@ -16,19 +16,16 @@ classifiers = [
     "Intended Audience :: Developers",
     "Intended Audience :: End Users/Desktop",
     "Intended Audience :: Science/Research",
-    "License :: OSI Approved :: MIT License",
     "Natural Language :: English",
     "Operating System :: OS Independent",
     "Topic :: Scientific/Engineering",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.8",
-    "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
 ]
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 dependencies = [
     "numpy",
     "uncertainties",
