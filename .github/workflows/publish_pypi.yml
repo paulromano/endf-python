@@ -20,7 +20,7 @@ jobs:
           fetch-depth: 0  # needed for setuptools_scm
 
       - name: Build wheels
-        uses: pypa/cibuildwheel@v2.17
+        uses: pypa/cibuildwheel@v3
 
       - uses: actions/upload-artifact@v4
         with:
