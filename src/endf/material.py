@@ -1,12 +1,12 @@
-# SPDX-FileCopyrightText: 2023 OpenMC contributors and Paul Romano
+# SPDX-FileCopyrightText: 2023-2025 OpenMC contributors and Paul Romano
 # SPDX-License-Identifier: MIT
 
 """Module for parsing and manipulating data from ENDF files.
 
 All the classes and functions in this module are based on the ENDF-102 report
 titled "ENDF-6 Formats Manual: Data Formats and Procedures for the Evaluated
-Nuclear Data Files". The version from January 2018 can be found at
-https://doi.org/10.2172/1425114.
+Nuclear Data Files". The version from September 2023 can be found at
+https://doi.org/10.2172/2007538.
 
 """
 import io

@@ -9,7 +9,7 @@
 from importlib.metadata import version as metadata_version
 
 project = 'ENDF Python Interface'
-copyright = '2023, Paul Romano'
+copyright = '2023-2025, Paul Romano'
 author = 'Paul Romano'
 
 release = metadata_version('endf')
