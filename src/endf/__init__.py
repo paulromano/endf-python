@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: 2023 Paul Romano
+# SPDX-FileCopyrightText: 2023-2025 Paul Romano
 # SPDX-License-Identifier: MIT
 
 from importlib.metadata import version, PackageNotFoundError
