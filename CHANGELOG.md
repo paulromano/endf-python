@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.1.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
+## [0.1.5]
+
+### Added
+
+* Adding py 3.13 to pyproject ([#20](https://github.com/paulromano/endf-python/pull/20))
+
+### Fixed
+
+* Fix parsing of MF=6, LAW=2 ([#22](https://github.com/paulromano/endf-python/pull/22))
+
 ## [0.1.4]
 
 ### Fixed
