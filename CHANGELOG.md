@@ -9,6 +9,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Fixed
 
+* Specifically use cibuildwheel 3.1.3 ([#27](https://github.com/paulromano/endf-python/pull/27))
+
+## [0.1.8]
+
+### Fixed
+
 * Update cibuildwheel to v3 ([#26](https://github.com/paulromano/endf-python/pull/26))
 
 ## [0.1.7]
