@@ -149,9 +149,10 @@ def parse_mf8_mt457(file_obj: TextIO) -> dict:
                 discrete['ER'] = tuple(items[0:2])
                 discrete['RTYP'] = values[0]
                 discrete['TYPE'] = values[1]
-                if STYP == 0:
-                    discrete['RI'] = tuple(values[2:4])
+                discrete['RI'] = tuple(values[2:4])
+                if STYP == 0 or STYP == 2:
                     discrete['RIS'] = tuple(values[4:6])
+                if STYP == 0:
                     discrete['RICC'] = tuple(values[6:8])
                     discrete['RICK'] = tuple(values[8:10])
                     discrete['RICL'] = tuple(values[10:12])
