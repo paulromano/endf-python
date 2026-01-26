@@ -153,14 +153,14 @@ class Material:
                 fh.readline()
                 break
 
-            section_text = ''
+            section_lines = []
             while True:
                 line = fh.readline()
                 if line[72:75] == '  0':
                     break
                 else:
-                    section_text += line
-            self.section_text[MF, MT] = section_text
+                    section_lines.append(line)
+            self.section_text[MF, MT] = "".join(section_lines)
 
         if need_to_close:
             fh.close()
