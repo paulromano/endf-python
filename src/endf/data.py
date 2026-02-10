@@ -119,7 +119,7 @@ def zam(name: str) -> Tuple[int, int, int]:
 
     """
     try:
-        symbol, A, state = _GNDS_NAME_RE.match(name).groups()
+        symbol, A, state = _GNDS_NAME_RE.fullmatch(name).groups()
     except AttributeError:
         raise ValueError(f"'{name}' does not appear to be a nuclide name in "
                          "GNDS format")
