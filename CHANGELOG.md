@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ### Changed
 
 * Optimize string construction in section text parsing ([#30](https://github.com/paulromano/endf-python/pull/30))
+* Updated build architectures for wheels on PyPA ([#34](https://github.com/paulromano/endf-python/pull/34))
 
 ### Fixed
 
