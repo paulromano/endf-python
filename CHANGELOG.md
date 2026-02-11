@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.1.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
+## [0.1.10]
+
+### Changed
+
+* Optimize string construction in section text parsing ([#30](https://github.com/paulromano/endf-python/pull/30))
+
+### Fixed
+
+* Fix reading of relative intensity for STYP != 0 ([#29](https://github.com/paulromano/endf-python/pull/29))
+* Use fullmatch for GNDS regular expression ([#31](https://github.com/paulromano/endf-python/pull/31))
+
 ## [0.1.9]
 
 ### Fixed
