@@ -6,33 +6,13 @@ from typing import Union, List
 
 import numpy as np
 
-from .data import gnds_name, temperature_str, ATOMIC_SYMBOL, EV_PER_MEV
+from .data import gnds_name, temperature_str, ATOMIC_SYMBOL, EV_PER_MEV, SUM_RULES
 from .material import Material
 from .fileutils import PathLike
 from .function import Tabulated1D
 from .reaction import Reaction, REACTION_MT
 from . import ace
 
-
-SUM_RULES = {
-    1: [2, 3],
-    3: [4, 5, 11, 16, 17, 22, 23, 24, 25, 27, 28, 29, 30, 32, 33, 34, 35,
-        36, 37, 41, 42, 44, 45, 152, 153, 154, 156, 157, 158, 159, 160,
-        161, 162, 163, 164, 165, 166, 167, 168, 169, 170, 171, 172,
-        173, 174, 175, 176, 177, 178, 179, 180, 181, 183, 184, 185,
-        186, 187, 188, 189, 190, 194, 195, 196, 198, 199, 200],
-    4: list(range(50, 92)),
-    16: list(range(875, 892)),
-    18: [19, 20, 21, 38],
-    27: [18, 101],
-    101: [102, 103, 104, 105, 106, 107, 108, 109, 111, 112, 113, 114,
-        115, 116, 117, 155, 182, 191, 192, 193, 197],
-    103: list(range(600, 650)),
-    104: list(range(650, 700)),
-    105: list(range(700, 750)),
-    106: list(range(750, 800)),
-    107: list(range(800, 850))
-}
 
 
 class IncidentNeutron:
