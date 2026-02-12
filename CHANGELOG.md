@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.1.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
+## [0.1.12]
+
+### Added
+
+* Add photon reaction summation rules ([#35](https://github.com/paulromano/endf-python/pull/35))
+
+## [0.1.11]
+
+### Fixed
+
+* Update build architectures for wheels on PyPA ([#34](https://github.com/paulromano/endf-python/pull/34))
+
 ## [0.1.10]
 
 ### Changed
