@@ -43,16 +43,16 @@ def parse_mf7_mt2(file_obj: TextIO) -> dict:
         params, W = get_tab1_record(file_obj)
         return {'SB': params[0], 'W': W}
 
-    ZA, AWR, LHTR, *_ = get_head_record(file_obj)
-    data = {'ZA': ZA, 'AWR': AWR, 'LHTR': LHTR}
+    ZA, AWR, LTHR, *_ = get_head_record(file_obj)
+    data = {'ZA': ZA, 'AWR': AWR, 'LTHR': LTHR}
 
-    if LHTR == 1:
+    if LTHR == 1:
         # coherent elastic
         data['coherent'] = get_coherent_elastic(file_obj)
-    elif LHTR == 2:
+    elif LTHR == 2:
         # incoherent elastic
         data['incoherent'] = get_incoherent_elastic(file_obj)
-    elif LHTR == 3:
+    elif LTHR == 3:
         # mixed coherent / incoherent elastic
         data['coherent'] = get_coherent_elastic(file_obj)
         data['incoherent'] = get_incoherent_elastic(file_obj)
