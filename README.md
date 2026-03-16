@@ -2,6 +2,7 @@
 
 [![License](https://img.shields.io/badge/license-MIT-green)](https://opensource.org/licenses/MIT)
 [![PyPI](https://img.shields.io/pypi/v/endf?label=PyPI)](https://pypi.org/project/endf)
+[![Anaconda-Server Badge](https://anaconda.org/conda-forge/endf/badges/version.svg)](https://anaconda.org/conda-forge/endf)
 
 `endf` is a Python package for reading and interpreting
 [ENDF-6](https://doi.org/10.2172/1425114) and
@@ -23,6 +24,13 @@ Index](https://pypi.org/project/endf/) using `pip`:
 
 ```sh
 python -m pip install endf
+```
+
+Alternativly, the `endf` Python package can be install from
+[Conda](https://anaconda.org/conda-forge/endf) using:
+
+```sh
+conda install -c conda-forge endf
 ```
 
 ## Documentation
