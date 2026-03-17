@@ -242,6 +242,38 @@ class Material:
         return '<{} for {} {}>'.format(_SUBLIBRARY[metadata['NSUB']], name,
                                        _LIBRARY[metadata['NLIB']])
 
+    def _open(self) -> io.StringIO:
+        """Return a seekable ENDF text stream for this material."""
+
+        parts = []
+
+        parts.append(f'{"":<66s}{self.MAT:4d} 0  0    0\n')
+        for (MF, MT) in sorted(self.section_text):
+            text = self.section_text[MF, MT]
+            parts.append(text)
+            if text and not text.endswith('\n'):
+                parts.append('\n')
+            parts.append(f'{"":<66s}{self.MAT:4d}{MF:2d}  0    0\n')
+
+        parts.append(f'{"":<66s}   0 0  0    0\n')
+        self._fh = io.StringIO(''.join(parts))
+        return self._fh
+
+    def tell(self) -> int:
+        if not hasattr(self, '_fh'):
+            self._open()
+        return self._fh.tell()
+
+    def readline(self) -> str:
+        if not hasattr(self, '_fh'):
+            self._open()
+        return self._fh.readline()
+
+    def seek(self, pos: int, whence: int = 0) -> int:
+        if not hasattr(self, '_fh'):
+            self._open()
+        return self._fh.seek(pos, whence)
+
     @property
     def sections(self) -> List[Tuple[int, int]]:
         return list(self.section_text.keys())
