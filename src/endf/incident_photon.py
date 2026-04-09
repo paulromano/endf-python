@@ -1,6 +1,3 @@
-# SPDX-FileCopyrightText: 2023-2025 Paul Romano
-# SPDX-License-Identifier: MIT
-
 from __future__ import annotations
 from typing import Union, List, Optional
 
@@ -278,6 +275,12 @@ class IncidentPhoton:
         PhotonReaction objects.
     atomic_relaxation : AtomicRelaxation or None
         Atomic relaxation data
+    compton_profiles : dict
+        Dictionary of Compton profile data with keys 'num_electrons'
+        (number of electrons in each subshell), 'binding_energy'
+        (ionization potential of each subshell in [eV]), and 'J' (list of
+        Tabulated1D Compton profiles). Only populated when reading from
+        ACE tables.
 
     """
 
