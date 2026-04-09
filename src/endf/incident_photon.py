@@ -31,6 +31,9 @@ PHOTON_REACTION_NAME = {
     517: 'pair_production_nuclear',
     522: 'photoelectric',
     525: 'heating',
+    526: 'electro_atomic_scat',
+    527: 'electro_atomic_brem',
+    528: 'electro_atomic_excit',
 }
 for _i, _shell in enumerate(_SUBSHELLS[1:], 1):
     PHOTON_REACTION_NAME[533 + _i] = _shell
@@ -282,6 +285,7 @@ class IncidentPhoton:
         self.atomic_number = atomic_number
         self.reactions = {}
         self.atomic_relaxation = None
+        self.compton_profiles = {}
 
     @classmethod
     def from_endf(
@@ -319,8 +323,9 @@ class IncidentPhoton:
                 rx = PhotonReaction(MT, xs=rx_data['sigma'])
 
                 # Set subshell binding energy and fluorescence yield
-                if 534 <= MT <= 572:
+                if 534 <= MT <= 599:
                     rx.subshell_binding_energy = rx_data['EPE']
+                if 534 <= MT <= 572:
                     rx.fluorescence_yield = rx_data['EFL']
 
                 data.reactions[MT] = rx
