@@ -542,6 +542,8 @@ class Table:
         """
         if self.data_type == TableType.NEUTRON_CONTINUOUS:
             return endf.IncidentNeutron.from_ace(self, **kwargs)
+        elif self.data_type == TableType.PHOTOATOMIC:
+            return endf.IncidentPhoton.from_ace(self, **kwargs)
         else:
             raise NotImplementedError(f"No class implemented for {self.data_type}")
 
