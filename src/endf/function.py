@@ -318,7 +318,10 @@ class Tabulated1D:
             if x_upper_bound < xi1:
                 yi1 = self._interpolate(interp, x_upper_bound, xi, yi, xi1, yi1)
                 xi1 = x_upper_bound
-                idx = self._x.size # This makes sure we exit the loop
+
+            # Add check to ensure the loop will stop
+            if x_upper_bound == xi1:
+                idx = self._x.size 
 
             # Contribute to the integral
             integral += self._integrate(interp, xi, yi, xi1, yi1)
