@@ -256,7 +256,9 @@ class Material:
 
         """
         NSUB = self.section_data[1, 451]['NSUB']
-        if NSUB == 10:
+        if NSUB == 3:
+            return endf.IncidentPhoton.from_endf(self)
+        elif NSUB == 10:
             return endf.IncidentNeutron.from_endf(self)
         else:
             raise NotImplementedError(f"No class implemented for {NSUB=}")

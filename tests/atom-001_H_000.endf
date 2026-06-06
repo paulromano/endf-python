@@ -1,0 +1,83 @@
+ $Rev::          $  $Date::            $                             1 0  0
+ 1000.00000 .999241400         -1          0          0          0 100 1451
+ 0.0        0.0                 0          0          0          6 100 1451
+ 0.0        1.0000D+11          0          0          6          8 100 1451
+ 0.0        0.0                 0          0         67          2 100 1451
+  1-H -  0 NDS,IAEA   Eval-Dec17 D.E.Cullen                        100 1451
+ NDS-IAEA-224         DIST-FEB18                                   100 1451
+----ENDF/B-VIII.0     MATERIAL  100                                100 1451
+-----ATOMIC RELAXATION DATA                                        100 1451
+------ENDF-6 FORMAT                                                100 1451
+================================================================== 100 1451
+The Livermore Evaluated Atomic Data Library (EADL) in the          100 1451
+ENDF-6 Format. Translated from the Livermore ENDL format           100 1451
+to the ENDF-6 Format.                                              100 1451
+================================================================== 100 1451
+  Contents                                                         100 1451
+================================================================== 100 1451
+  MF/MT    Description                                             100 1451
+================================================================== 100 1451
+  28/533   Atomic Relaxation Data for Electrons and Photons        100 1451
+================================================================== 100 1451
+  Warning                                                          100 1451
+================================================================== 100 1451
+  MF/MT combinations used to define ALL electron interaction data  100 1451
+  are newly defined MF/MT numbers for ENDF/B-VI that did not exist 100 1451
+  in earlier versions of ENDF/B.                                   100 1451
+================================================================== 100 1451
+  Definition of Data                                               100 1451
+================================================================== 100 1451
+  Atomic Relaxation Data for Electrons and Photons                 100 1451
+================================================================== 100 1451
+1) An atom can be ionized by a photon or an electron interaction.  100 1451
+2) The atomic relaxation data included here describes how a        100 1451
+   singly ionized atom returns to neutrality, by emitting photons  100 1451
+   (x-rays) and/or electrons (Auger, Coster-Kronig).               100 1451
+3) Data is given to define the transition probabilities between    100 1451
+   subshells for radiative (x-ray emission) and non-radiative      100 1451
+   (Auger, Coster-Kronig) transitions.                             100 1451
+4) The complete spectrum of emitted photons and electrons can be   100 1451
+   calculated using the data included here, e.g., see ref. 2,      100 1451
+   below, for am example of a computer code that analytically      100 1451
+   calculates these spectra.                                       100 1451
+================================================================== 100 1451
+  References                                                       100 1451
+================================================================== 100 1451
+1) S.T. Perkins, D.E. Cullen, etal., "Tables and Graphs of Atomic  100 1451
+   Subshell and Relaxation Data Derived from the LLNL Evaluated    100 1451
+   Atomic Data Library (EADL), Z = 1 - 100", UCRL-50400, Vol. 30,  100 1451
+   Lawrence Livermore National Laboratory (1991).                  100 1451
+2) D.E. Cullen "Program RELAX: A Code Designed to Calculate X-Ray  100 1451
+   and Electron Emission Spectra as Singly Charged Atoms Relax     100 1451
+   Back to Neutrality", UCRL-ID-110438, Lawrence Livermore         100 1451
+   National Laboratory (1992).                                     100 1451
+3) D.E. Cullen "A Survey of Atomic Binding Energies for use        100 1451
+   in EPICS2017" ,IAEA-NDS-224, (2017), Nuclear Data Section,      100 1451
+   IAEA, Vienna, Austria                                           100 1451
+                                                                   100 1451
+  These are the primary references to the contents of this library 100 1451
+  and they contain a complete list of references to the sources    100 1451
+  of data used in this library, methods of evaluation, accuracy    100 1451
+  of the data, etc.                                                100 1451
+================================================================== 100 1451
+  History                                                          100 1451
+================================================================== 100 1451
+ (1) November, 1991 - Initial release in the ENDL format.          100 1451
+ (2) November, 2001 - Initial release in the ENDF-6 format.        100 1451
+ (3) September,2014 - Insure Standard C, C++, FORTRAN Format       100 1451
+ (4) September,2014 - Updated based on recently publshed data      100 1451
+ (5) September,2017 - New Binding Energies\Same Probabilities      100 1451
+ (6) April,    2018 - Corrected Transition Energies                100 1451
+================================================================== 100 1451
+ **************** Program DICTIN (VERSION 2017-1) **************** 100 1451
+                                1        451         73          0 100 1451
+                               28        533          3          0 100 1451
+                                                                   100 1  0
+                                                                   100 0  0
+ 1000.00000 .999241400          0          0          1          0 10028533
+ 1.00000000 0.0                 0          0          6          0 10028533
+ 13.6000000 1.00000000 0.0        0.0        0.0        0.0        10028533
+                                                                   10028  0
+                                                                   100 0  0
+                                                                     0 0  0
+                                                                    -1 0  0
