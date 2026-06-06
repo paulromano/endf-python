@@ -191,7 +191,7 @@ def parse_mf1_mt458(file_obj: TextIO) -> dict:
             (_, _, LDRV, IFC), EIFC = get_tab1_record(file_obj)
 
             # Determine which component it is and replace in dictionary
-            name = components[IFC]
+            name = components[IFC-1]
             data[name] = {'LDRV': LDRV, 'EIFC': EIFC}
 
     return data
