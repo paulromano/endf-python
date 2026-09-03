@@ -91,8 +91,7 @@ class ContinuumEnergyAngle:
             _, E_i, ND, NA, NW, NEP = items
             dist = {'ND': ND, 'NA': NA, 'NW': NW, 'NEP': NEP}
             data['E'][i] = E_i
-            values = np.asarray(values)
-            values.shape = (NEP, NA + 2)
+            values = np.asarray(values).reshape(NEP, NA + 2)
             dist["E'"] = values[:, 0]
             dist['b'] = values[:, 1:]
             data['distribution'].append(dist)
