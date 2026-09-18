@@ -7,6 +7,7 @@ from .material import *
 from .incident_neutron import *
 from .function import *
 from .product import *
+from .radionuclide_production import *
 from .reaction import *
 from . import ace
 
