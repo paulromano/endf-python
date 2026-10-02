@@ -5,6 +5,7 @@ from importlib.metadata import version, PackageNotFoundError
 
 from .material import *
 from .incident_neutron import *
+from .incident_photon import *
 from .function import *
 from .product import *
 from .reaction import *
