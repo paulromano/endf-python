@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Fixed
 
+* Correct Legendre weighting in the MF=4 angular distribution conversion
 * Fixing MF7/MT2 key name: LHTR → LTHR ([#37](https://github.com/paulromano/endf-python/pull/37))
 
 ## [0.1.12]
