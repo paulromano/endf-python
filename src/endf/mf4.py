@@ -119,8 +119,7 @@ class AngleDistribution:
             mu = []
             for a_l in data['legendre']['a_l']:
                 coef = np.insert(a_l, 0, 1.0)
-                # NumPy requires the ENDF angular weighting explicitly.
-                coef = coef * (2 * np.arange(coef.size) + 1) / 2
+                coef *= (2 * np.arange(coef.size) + 1) / 2
                 mu.append(Legendre(coef))
         elif LTT == 2 and LI == 0:
             energy = data['tabulated']['E']
@@ -131,8 +130,7 @@ class AngleDistribution:
             mu_leg = []
             for a_l in data['legendre']['a_l']:
                 coef = np.insert(a_l, 0, 1.0)
-                # NumPy requires the ENDF angular weighting explicitly.
-                coef = coef * (2 * np.arange(coef.size) + 1) / 2
+                coef *= (2 * np.arange(coef.size) + 1) / 2
                 mu_leg.append(Legendre(coef))
 
             # Then get tabulated
