@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Added
 
+* Add high-level access to MF=8/9/10 radionuclide production data ([#4](https://github.com/shimwell/endf-python/issues/4))
 * Run tests on Python 3.14 ([#38](https://github.com/paulromano/endf-python/pull/38))
 
 ### Fixed
