@@ -339,6 +339,12 @@ class Tabulated1D:
 
     @staticmethod
     def _integrate(p, x0, y0, x1, y1):
+        # Zero-width bins contribute nothing to the integral; this avoids
+        # division by zero across repeated tabulated coordinates (e.g. ENDF-6
+        # TAB1 discontinuities).
+        if x1 == x0:
+            return 0.
+
         if p == 1:
             # Histogram
             return y0*(x1 - x0)
@@ -346,34 +352,15 @@ class Tabulated1D:
         elif p == 2:
             # Linear-linear
             dx = x1 - x0
-            if np.isscalar(dx):
-                if dx == 0.:
-                    return 0.
-                m = (y1 - y0)/dx
-                return (y0 - m*x0)*dx + 0.5*m*(x1**2 - x0**2)
-            else:
-                out = np.zeros_like(dx, dtype=float)
-                nz = dx != 0.
-                m = (y1[nz] - y0[nz])/dx[nz]
-                out[nz] = (y0[nz] - m*x0[nz])*dx[nz] + 0.5*m*(x1[nz]**2 - x0[nz]**2)
-                return out
+            m = (y1 - y0)/dx
+            return (y0 - m*x0)*dx + 0.5*m*(x1**2 - x0**2)
 
         elif p == 3:
             # Linear-log
             dx = x1 - x0
-            if np.isscalar(dx):
-                if dx == 0.:
-                    return 0.
-                logx = np.log(x1/x0)
-                m = (y1 - y0)/logx
-                return y0*dx + m*(x1*(logx - 1) + x0)
-            else:
-                out = np.zeros_like(dx, dtype=float)
-                nz = dx != 0.
-                logx = np.log(x1[nz]/x0[nz])
-                m = (y1[nz] - y0[nz])/logx
-                out[nz] = y0[nz]*dx[nz] + m*(x1[nz]*(logx - 1) + x0[nz])
-                return out
+            logx = np.log(x1/x0)
+            m = (y1 - y0)/logx
+            return y0*dx + m*(x1*(logx - 1) + x0)
 
         elif p == 4:
             # Log-linear
@@ -385,21 +372,10 @@ class Tabulated1D:
         elif p == 5:
             # Log-log
             dx = x1 - x0
-            if np.isscalar(dx):
-                if dx == 0.:
-                    return 0.
-                logx = np.log(x1/x0)
-                z = np.log(y1/y0) + logx
-                factor = np.expm1(z)/z if z != 0. else 1.
-                return y0*x0*logx*factor
-            else:
-                logx = np.zeros_like(dx, dtype=float)
-                nz = dx != 0.
-                logx[nz] = np.log(x1[nz]/x0[nz])
-                z = np.log(y1/y0) + logx
-                factor = np.ones_like(z, dtype=float)
-                np.divide(np.expm1(z), z, out=factor, where=z != 0.)
-                return y0*x0*logx*factor
+            logx = np.log(x1/x0)
+            z = np.log(y1/y0) + logx
+            factor = np.expm1(z)/z if z != 0. else 1.
+            return y0*x0*logx*factor
         else:
             raise ValueError(f"Unknown interpolation rule {p}")
 
