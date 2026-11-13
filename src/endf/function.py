@@ -383,7 +383,8 @@ class Tabulated1D:
             dxn = x1n - x0n
             logx = np.log(x1n / x0n)
             z = np.log(y1n / y0n) + logx
-            factor = np.expm1(z) / z if z != 0. else 1.
+            factor = np.ones_like(z, dtype=float)
+            np.divide(np.expm1(z), z, out=factor, where=z != 0.)
             out[nonzero] = y0n * x0n * logx * factor
 
         else:
