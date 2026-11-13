@@ -339,38 +339,58 @@ class Tabulated1D:
 
     @staticmethod
     def _integrate(p, x0, y0, x1, y1):
+        # Zero-width bins (ENDF-6 TAB1 step discontinuities) contribute nothing
+        # to the integral and would otherwise divide by zero below. Handle both
+        # scalar bounds (``integrate``) and array bounds (``integral``).
+        x0 = np.asarray(x0, dtype=float)
+        x1 = np.asarray(x1, dtype=float)
+        y0 = np.asarray(y0, dtype=float)
+        y1 = np.asarray(y1, dtype=float)
+        dx = x1 - x0
+        nonzero = dx != 0
+        out = np.zeros_like(dx, dtype=float)
+        if not np.any(nonzero):
+            return out.item() if out.ndim == 0 else out
+
+        x0n, x1n, y0n, y1n = x0[nonzero], x1[nonzero], y0[nonzero], y1[nonzero]
+
         if p == 1:
             # Histogram
-            return y0*(x1 - x0)
+            out[nonzero] = y0n * (x1n - x0n)
 
         elif p == 2:
             # Linear-linear
-            m = (y1 - y0)/(x1 - x0)
-            return (y0 - m*x0)*(x1 - x0) + 0.5*m*(x1**2 - x0**2)
+            dxn = x1n - x0n
+            m = (y1n - y0n) / dxn
+            out[nonzero] = (y0n - m * x0n) * dxn + 0.5 * m * (x1n**2 - x0n**2)
 
         elif p == 3:
             # Linear-log
-            logx = np.log(x1/x0)
-            m = (y1 - y0)/logx
-            return y0*(x1 - x0) + m*(x1*(logx - 1) + x0)
+            dxn = x1n - x0n
+            logx = np.log(x1n / x0n)
+            m = (y1n - y0n) / logx
+            out[nonzero] = y0n * dxn + m * (x1n * (logx - 1) + x0n)
 
         elif p == 4:
             # Log-linear
-            logy = np.log(y1/y0)
+            logy = np.log(y1n / y0n)
             factor = np.ones_like(logy, dtype=float)
             np.divide(np.expm1(logy), logy, out=factor, where=logy != 0.)
-            return y0*(x1 - x0)*factor
+            out[nonzero] = y0n * (x1n - x0n) * factor
 
         elif p == 5:
             # Log-log
-            logx = np.log(x1/x0)
-            z = np.log(y1/y0) + logx
+            dxn = x1n - x0n
+            logx = np.log(x1n / x0n)
+            z = np.log(y1n / y0n) + logx
             factor = np.ones_like(z, dtype=float)
             np.divide(np.expm1(z), z, out=factor, where=z != 0.)
-            return y0*x0*logx*factor
-        
+            out[nonzero] = y0n * x0n * logx * factor
+
         else:
             raise ValueError(f"Unknown interpolation rule {p}")
+
+        return out.item() if out.ndim == 0 else out
 
     @classmethod
     def from_ace(cls, ace, idx=0, convert_units=True):

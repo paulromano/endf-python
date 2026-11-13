@@ -53,3 +53,18 @@ def test_integrate_clipped_partial_range():
 
     assert f.integrate(0., 1.5) == approx(0.5)
     assert f.integrate(1.5, 0.) == approx(-0.5)
+
+
+def test_integrate_discontinuous():
+    # Step discontinuity at x=2.0
+    x = [1.0, 2.0, 2.0, 3.0]
+    y = [1.0, 2.0, 5.0, 6.0]
+    breakpoints = [2, 4]
+    interpolation = [2, 2]
+    f = Tabulated1D(x, y, breakpoints, interpolation)
+
+    assert f.integral() == approx([0.0, 1.5, 1.5, 7.0])
+    assert f.integrate(1.0, 3.0) == approx(7.0)
+    assert f.integrate(1.0, 2.0) == approx(1.5)
+    assert f.integrate(2.0, 3.0) == approx(5.5)
+    assert f.integrate(1.5, 2.5) == approx(3.5)
