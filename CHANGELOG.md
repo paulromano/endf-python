@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Fixed
 
+* Fix MF=33 parsing of LTY=0 NC-type sub-subsections (no longer duplicated) and of the LB=0-4 E-table split ([#48](https://github.com/paulromano/endf-python/pull/48))
 * Correct Legendre weighting in the MF=4 angular distribution conversion ([#46](https://github.com/paulromano/endf-python/pull/46))
 * Fixing MF7/MT2 key name: LHTR → LTHR ([#37](https://github.com/paulromano/endf-python/pull/37))
 
