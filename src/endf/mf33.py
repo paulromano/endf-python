@@ -19,7 +19,6 @@ def parse_mf33_subsection(file_obj) -> dict:
             subsub = {'LTY': LTY, 'E1': E1, 'E2': E2, 'NCI': NCI}
             subsub['CI'] = values[::2]
             subsub['XMTI'] = values[1::2]
-            subsection['nc_subsections'].append(subsub)
         else:
             (E1, E2, MATS, MTS, _, NEI), values = get_list_record(file_obj)
             subsub = {'LTY': LTY, 'E1': E1, 'E2': E2, 'MATS': MATS,
@@ -40,10 +39,11 @@ def parse_mf33_subsection(file_obj) -> dict:
         if 0 <= LB <= 4:
             (_, _, LT, LB, NT, NP), values = get_list_record(file_obj)
             subsub = {'LT': LT, 'LB': LB, 'NT': NT, 'NP': NP}
-            k_array = values[:NT - NP]
+            # First array has NP - LT pairs, second array has LT pairs
+            k_array = values[:2*(NP - LT)]
             subsub['Ek'] = k_array[::2]
             subsub['Fk'] = k_array[1::2]
-            l_array = values[NT - NP:]
+            l_array = values[2*(NP - LT):]
             subsub['El'] = l_array[::2]
             subsub['Fl'] = l_array[1::2]
         elif LB == 5:
